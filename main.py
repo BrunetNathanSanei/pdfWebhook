@@ -36,17 +36,3 @@ def webhook():
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",port = 5000)
-
-
-# img = cv.imread("1444x920_20mn-30763.jpeg")
-
-# img_gray = cv.cvtColor(img,cv.COLOR_BAYER_BG2GRAY)
-# threshold_img = cv.threshold(img_gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)[1]
-
-# cv.imshow('Image',img)
-# cv.waitKey(10000)
-
-# text = pytesseract.image_to_string(img)
-
-# print(text)
-
