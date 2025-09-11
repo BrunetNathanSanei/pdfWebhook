@@ -37,10 +37,12 @@ def webhook():
 @app.route("/test")
 def test(methods = ['GET','POST']):
     if methods == 'GET':
-        return jsonify({"status" : "ok"}),200
+        return jsonify({"status" : "get ok"}),200
+    elif methods == 'POST':
+        return jsonify({"status" : "post ok"}),200
     else :
         print("pas de méthode, ok")
-        return jsonify({"status" : "ok"}),200
+        return jsonify({"status" : "no methods ok"}),200
 
 
 if __name__ == "__main__":
