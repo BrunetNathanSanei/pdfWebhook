@@ -40,7 +40,7 @@ def test(methods = ['GET','POST']):
         return jsonify({"status" : "ok"}),200
     else :
         print("pas de méthode, ok")
-        return "ok",200
+        return jsonify({"status" : "ok"}),200
 
 
 if __name__ == "__main__":
