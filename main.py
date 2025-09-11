@@ -15,12 +15,13 @@ def webhook():
     
     file = request.files["file"]
     extension = file.filename.split('.')[-1]
-    print(extension)
+    print('file extension : {extension}')
     if extension == 'pdf' :
         text = ""
         with pdfplumber.open(file.stream) as pdf :
             for page in pdf.pages :
                 text += page.extract_text() + "\n"
+        print(f'text : {text}')
         return text
     elif extension.lower() in img_extension:
         file_bytes = np.frombuffer(file.read(), np.uint8)
