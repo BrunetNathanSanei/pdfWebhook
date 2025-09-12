@@ -34,11 +34,11 @@ def webhook():
     else :
         return "Aucun fichier PDF reçu", 400
 
-@app.route("/test")
-def test(methods = ['GET','POST']):
-    if methods == 'GET':
+@app.route("/test",methods = ['GET','POST'])
+def test():
+    if request.methods == 'GET':
         return jsonify({"status" : "get ok"}),200
-    elif methods == 'POST':
+    elif request.methods == 'POST':
         return jsonify({"status" : "post ok"}),200
     else :
         print("pas de méthode, ok")
