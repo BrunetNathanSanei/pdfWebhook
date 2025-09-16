@@ -40,7 +40,7 @@ def test():
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
         file = request.files["file"]
-        return jsonify({"status" : "post ok : {file.filename}"}),200
+        return jsonify({"status" : f"post ok : {file.filename}"}),200
     else :
         print("pas de méthode, ok")
         return jsonify({"status" : "no methods ok"}),200
