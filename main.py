@@ -3,9 +3,13 @@ import numpy as np
 import cv2
 import pdfplumber
 from flask import Flask, request, jsonify
+import logging
 
 app = Flask(__name__)
 img_extension = {}
+
+logging.basicConfig(level=logging.INFO)
+
 
 @app.route("/webhook", methods=['POST'])
 def webhook():
@@ -36,6 +40,8 @@ def webhook():
 
 @app.route("/test",methods = ['GET','POST'])
 def test():
+    print('/test : ceci est un test de print')
+    app.logger.info("Requête reçue sur /test")
     if request.method == 'GET':
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
