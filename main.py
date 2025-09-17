@@ -49,11 +49,16 @@ def test():
         app.logger.info(f"request.form: {request.form}")
         app.logger.info(f"request.files: {request.files}")
         app.logger.info(f"request.headers: {request.headers}")
-        if "file_url" in request.form :
-            app.logger.info("file_url")
-            # file_url = request.form["file_url"]
-            # app.logger.info(f"URL reçue : {file_url}")
-            return jsonify({"status" : f"post ok :"}),200
+
+        file_url = request.form["file_url"]
+
+        app.logger.info(f"file_url: {file_url}")
+
+        # if "file_url" in request.form :
+        #     app.logger.info("file_url")
+        #     # file_url = request.form["file_url"]
+        #     # app.logger.info(f"URL reçue : {file_url}")
+        #     return jsonify({"status" : f"post ok :"}),200
         # if "file" not in request.files:
         #     app.logger.warning("Aucun fichier trouvé dans la requête")
         #     return jsonify({"error": "No file in request"}), 400       
