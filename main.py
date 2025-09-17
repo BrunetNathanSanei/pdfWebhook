@@ -49,7 +49,6 @@ def test():
         try :
             file_url = request.form["file_url"]
             file = requests.get(file_url)
-            app.logger.info(file.filename)
             text = ""
             with pdfplumber.open(BytesIO(file.content)) as pdf:
                 for page in pdf.pages:
