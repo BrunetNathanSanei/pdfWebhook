@@ -4,6 +4,7 @@ import cv2
 import pdfplumber
 from flask import Flask, request, jsonify
 import logging
+from io import BytesIO
 
 app = Flask(__name__)
 img_extension = {}
@@ -44,29 +45,19 @@ def test():
     if request.method == 'GET':
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
-        
-        app.logger.info(f"request.data: {request.data}")
-        app.logger.info(f"request.form: {request.form}")
-        app.logger.info(f"request.files: {request.files}")
-        app.logger.info(f"request.headers: {request.headers}")
-
-        file_url = request.form["file_url"]
-
-        app.logger.info(f"file_url: {file_url}")
-
-        # if "file_url" in request.form :
-        #     app.logger.info("file_url")
-        #     # file_url = request.form["file_url"]
-        #     # app.logger.info(f"URL reçue : {file_url}")
-        #     return jsonify({"status" : f"post ok :"}),200
-        # if "file" not in request.files:
-        #     app.logger.warning("Aucun fichier trouvé dans la requête")
-        #     return jsonify({"error": "No file in request"}), 400       
-
-        
-        # file = request.files["file"]
-        # app.logger.info(f"filename : {file.filename}")
-        return jsonify({"status" : f"post ok :"}),200
+        try :
+            file_url = request.form["file_url"]
+            file = request.get(file_url)
+            app.logger.info(file.filename)
+            text = ""
+            with pdfplumber.open(BytesIO(file.content)) as pdf:
+                for page in pdf.pages:
+                    text += page.extract_text()
+            app.logger.info(text)
+            return text
+        except : 
+            app.logger.info("No url found")
+            return jsonify({'No url found'}),400
     else :
         print("pas de méthode, ok")
         return jsonify({"status" : "no methods ok"}),200
