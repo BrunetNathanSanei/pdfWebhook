@@ -46,9 +46,13 @@ def test():
     elif request.method == 'POST':
         if "file" not in request.files:
             app.logger.warning("Aucun fichier trouvé dans la requête")
-            return jsonify({"error": "No file in request"}), 400
-        file = request.files["file"]
-        app.logger.info(f"filename : {file.filename}")
+            return jsonify({"error": "No file in request"}), 400       
+        elif "file_url" in request.form :
+            file_url = request.form["file_url"]
+            app.logger.info(f"URL reçue : {file_url}")
+        
+        # file = request.files["file"]
+        # app.logger.info(f"filename : {file.filename}")
         return jsonify({"status" : f"post ok :"}),200
     else :
         print("pas de méthode, ok")
