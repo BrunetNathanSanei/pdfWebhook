@@ -5,6 +5,7 @@ import pdfplumber
 from flask import Flask, request, jsonify
 import logging
 from io import BytesIO
+import requests
 
 app = Flask(__name__)
 img_extension = {}
@@ -47,7 +48,7 @@ def test():
     elif request.method == 'POST':
         try :
             file_url = request.form["file_url"]
-            file = request.get(file_url)
+            file = requests.get(file_url)
             app.logger.info(file.filename)
             text = ""
             with pdfplumber.open(BytesIO(file.content)) as pdf:
