@@ -48,10 +48,10 @@ def test():
             app.logger.info("file_url")
             # file_url = request.form["file_url"]
             # app.logger.info(f"URL reçue : {file_url}")
-            jsonify({"status" : f"post ok :"}),200
-        if "file" not in request.files:
-            app.logger.warning("Aucun fichier trouvé dans la requête")
-            return jsonify({"error": "No file in request"}), 400       
+            return jsonify({"status" : f"post ok :"}),200
+        # if "file" not in request.files:
+        #     app.logger.warning("Aucun fichier trouvé dans la requête")
+        #     return jsonify({"error": "No file in request"}), 400       
 
         
         # file = request.files["file"]
