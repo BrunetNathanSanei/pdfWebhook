@@ -40,14 +40,13 @@ def webhook():
 
 @app.route("/test",methods = ['GET','POST'])
 def test():
-    print('/test : ceci est un test de print')
     app.logger.info("Requête reçue sur /test")
     if request.method == 'GET':
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
-        # file = request.files["file"]
-        file = "le.pdf"
-        return jsonify({"status" : f"post ok : {file}"}),200
+        file = request.files["file"]
+        app.logger.info(f"filename : {file.filename}")
+        return jsonify({"status" : f"post ok :"}),200
     else :
         print("pas de méthode, ok")
         return jsonify({"status" : "no methods ok"}),200
