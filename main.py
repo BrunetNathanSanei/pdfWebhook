@@ -45,7 +45,10 @@ def test():
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
         
-        app.logger.info(f"request.data: {request.data}") 
+        app.logger.info(f"request.data: {request.data}")
+        app.logger.info(f"request.form: {request.form}")
+        app.logger.info(f"request.files: {request.files}")
+        app.logger.info(f"request.headers: {request.headers}")
         if "file_url" in request.form :
             app.logger.info("file_url")
             # file_url = request.form["file_url"]
