@@ -44,6 +44,9 @@ def test():
     if request.method == 'GET':
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
+        if "file" not in request.files:
+            app.logger.warning("Aucun fichier trouvé dans la requête")
+            return jsonify({"error": "No file in request"}), 400
         file = request.files["file"]
         app.logger.info(f"filename : {file.filename}")
         return jsonify({"status" : f"post ok :"}),200
