@@ -53,6 +53,7 @@ def test():
             with pdfplumber.open(BytesIO(file.content)) as pdf:
                 for page in pdf.pages:
                     text += page.extract_text()
+            text = clean_text(text)
             app.logger.info(text)
             return text
         except : 
@@ -62,6 +63,36 @@ def test():
         print("pas de méthode, ok")
         return jsonify({"status" : "no methods ok"}),200
 
+
+@app.route("/send_pdf",methods = ['POST'])
+def send_pdf():
+    if "file" not in request.files :
+        return "Aucun fichier PDF reçu", 400
+    
+    
+    file = request.files["file"]
+    extension = file.filename.split('.')[-1]
+    print(f'file extension : {extension}')
+    if extension == 'pdf' :
+        text = ""
+        with pdfplumber.open(file.stream) as pdf :
+            for page in pdf.pages :
+                text += page.extract_text() + "\n"
+        begin_pattern = "DEMANDE DE FINANCEMENT"
+        # if begin_pattern in text :
+        #     text = text.split(begin_pattern)[1]
+        text = clean_text(text)
+        return text
+        
+    else :
+        return "Aucun fichier PDF reçu", 400
+
+
+def clean_text(text)->str:
+    remove_pattern = ["GALLEA Quentin","06-80-75-04-20", "quentin@credit-avenue.fr"]
+    for pattern in remove_pattern :
+        text = text.replace(pattern,"")
+    return text
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",port = 5000)
