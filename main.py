@@ -89,7 +89,7 @@ def send_pdf():
 
 
 def clean_text(text)->str:
-    remove_pattern = ["GALLEA Quentin","06-80-75-04-20", "quentin@credit-avenue.fr"]
+    remove_pattern = ["GALLEA Quentin","06-80-75-04-20", "quentin@credit-avenue.fr","Pour vous aider à faire valoir vos droits"]
     for pattern in remove_pattern :
         text = text.replace(pattern,"")
     return text

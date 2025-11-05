@@ -34,10 +34,11 @@ def test_pdf():
 
 def test_webhook():
     url = "https://pdfwebhook.onrender.com/test"
+    url_local = "http://192.168.1.107:5000/test"
     data = {
         "file_url" : "https://www.yvelines.fr/wp-content/uploads/2009/11/modele-bulletin-de-salaire.pdf"
     }
-    r = requests.post(url=url,data=data)
+    r = requests.post(url=url_local,data=data)
     print(r.status_code)
     return None
 
@@ -51,4 +52,5 @@ def test_sedn_pdf(file_name):
 
 if __name__ == "__main__":
     file_name= "Demande_de_financement - 2025-04-15T113120.447 (1).pdf"
-    test_sedn_pdf(file_name=file_name)
+    # test_sedn_pdf(file_name=file_name)
+    test_webhook()
