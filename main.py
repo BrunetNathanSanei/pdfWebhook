@@ -82,6 +82,7 @@ def send_pdf():
         # if begin_pattern in text :
         #     text = text.split(begin_pattern)[1]
         text = clean_text(text)
+
         return text
         
     else :
@@ -90,9 +91,31 @@ def send_pdf():
 
 def clean_text(text)->str:
     remove_pattern = ["GALLEA Quentin","06-80-75-04-20", "quentin@credit-avenue.fr","Pour vous aider à faire valoir vos droits"]
+    split_pattern_renseignement = "Renseignements emprunteurs"
+    split_pattern_pro = "Situation professionnelle –"
+    split_pattern_charge = "Personnes à charge"
+    end_patterns = [" Patrimoine"," Crédit à la consommation"," Épargne",]
     for pattern in remove_pattern :
         text = text.replace(pattern,"")
-    return text
+    # Garde tout ce qui est après "Renseignements emprunteurs"
+    print(f"split_pattern_renseignement in text : {split_pattern_renseignement in text}")
+    if split_pattern_renseignement in text :
+        text = text.split(split_pattern_renseignement)[1]
+    # Coupe en 2 à "Situation professionnelle"
+    if split_pattern_pro in text :
+        part0 = text.split(split_pattern_pro)[0]
+        part1 = "\n".join(text.split(split_pattern_pro)[1:])
+        # Enlève de la partie du haut ce qui concerne "Personnes à charge"
+        if split_pattern_charge in part0:
+            part0=text.split(split_pattern_charge)[0]
+        for end in end_patterns :
+            if end in part1:
+                part1 =part1.split(end)[0]
+                break
+        text = part0 + part1
+        return text
+    else :
+        return text
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",port = 5000)

@@ -2,6 +2,9 @@ import requests
 import pdfplumber
 from io import BytesIO
 from PyPDF2 import PdfReader
+import re
+from os import listdir
+from os.path import isfile, join
 
 def test_botpress_file():
 
@@ -38,19 +41,27 @@ def test_webhook():
     data = {
         "file_url" : "https://www.yvelines.fr/wp-content/uploads/2009/11/modele-bulletin-de-salaire.pdf"
     }
-    r = requests.post(url=url_local,data=data)
+    r = requests.post(url=url,data=data)
     print(r.status_code)
+    print(r.text)
     return None
 
 
-def test_sedn_pdf(file_name):
+def test_send_pdf(file_name):
     url = "http://127.0.0.1:5000/send_pdf"
     files = {'file' : open(file_name, 'rb')}
 
     r = requests.post(url=url,files=files)
-    print(r.text)
+    return r.text
 
 if __name__ == "__main__":
-    file_name= "Demande_de_financement - 2025-04-15T113120.447 (1).pdf"
-    # test_sedn_pdf(file_name=file_name)
-    test_webhook()
+    pdf_dir = "demande_financement/pdf/"
+    result_dir = "demande_financement/results/"
+    files = [f for f in listdir(pdf_dir) if isfile(join(pdf_dir,f))]
+    for file in files :
+        text = test_send_pdf(file_name=join(pdf_dir,file))
+        with open(join(result_dir,file).replace(".pdf",".txt"),"w") as f:
+            f.write(text)
+    
+
+    #test_webhook()
