@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 import logging
 from io import BytesIO
 import requests
+import re
 
 app = Flask(__name__)
 img_extension = {}
@@ -68,8 +69,6 @@ def test():
 def send_pdf():
     if "file" not in request.files :
         return "Aucun fichier PDF reçu", 400
-    
-    
     file = request.files["file"]
     extension = file.filename.split('.')[-1]
     print(f'file extension : {extension}')
@@ -78,15 +77,56 @@ def send_pdf():
         with pdfplumber.open(file.stream) as pdf :
             for page in pdf.pages :
                 text += page.extract_text() + "\n"
-        begin_pattern = "DEMANDE DE FINANCEMENT"
-        # if begin_pattern in text :
-        #     text = text.split(begin_pattern)[1]
-        text = clean_text(text)
-
         return text
         
     else :
         return "Aucun fichier PDF reçu", 400
+
+@app.route("/carcasse",methods = ['POST'])
+def carcasse():
+    if "file" not in request.files :
+        return "Aucun fichier PDF reçu", 400
+    file = request.files["file"]
+    extension = file.filename.split('.')[-1]
+    print(f'file extension : {extension}')
+    if extension == 'pdf' :
+        text = extract_pdf(file.stream)
+    else :
+        return "Aucun fichier PDF reçu", 400
+    
+    text = preprocessing(text)
+    borrowers = get_borrowers(text)
+    delimiters = create_delimiters_list(borrowers)
+    
+    text_parts = split_text(text=text,delimiters=delimiters)
+    
+    informations = get_informations(borrowers,text_parts)
+    total,taux,duree = get_loan(text_parts)
+
+    data = {"borrowers" : informations , "total" : total,"taux" : taux, "duration" :duree}
+    return data
+
+@app.route("/pdf2text", methods = ['POST'])
+def pdf2text():
+    if "file" not in request.files :
+        return "Aucun fichier PDF reçu", 400
+    file = request.files["file"]
+    extension = file.filename.split('.')[-1]
+    print(f'file extension : {extension}')
+    if extension == 'pdf' :
+        text = extract_pdf(file.stream)
+        return text
+        
+    else :
+        return "Aucun fichier PDF reçu", 400 
+    
+
+def extract_pdf(stream):
+    text = ""
+    with pdfplumber.open(stream) as pdf :
+        for page in pdf.pages :
+            text += page.extract_text() + "\n"
+    return text
 
 
 def clean_text(text)->str:
@@ -116,6 +156,153 @@ def clean_text(text)->str:
         return text
     else :
         return text
+
+def preprocessing(text:str)->str:
+    pattern_list = ["Établie le [0-9/]*\n","GALLEA Quentin\n","06-80-75-04-20\n","quentin@credit-avenue.fr\n","[0-9]{1,2}/[0-9]{1,2}\n"]
+    for pattern in pattern_list :
+        text = re.sub(pattern,"",text)
+    return text
+
+def split_text(text:str,delimiters:list,verbose=False):
+    text_parts = {}
+    for i,delimiter in enumerate(delimiters):
+        if delimiter in text :
+            # Cherche le delimiter suivant afin d'isoler les texte qui correspond au paragraphe du delimiter en cours
+            next_delimiter = find_next_delimiter(remainning_text=text.split(delimiter)[1], remaining_delimiters=delimiters[min(i,len(delimiters)):])
+            if verbose :
+                print(f"delimiter : {delimiter} | next_delimiter : {next_delimiter}")
+            if next_delimiter is not None :
+                extracted_text = re.search(f"{delimiter}.*{next_delimiter}", text, re.DOTALL).group()
+                extracted_text = re.sub(f"{delimiter}|{next_delimiter}","",extracted_text).strip()
+                text_parts[delimiter] = extracted_text
+            else :
+                text_parts[delimiter] = text.split(delimiter)[1]
+    return text_parts  
+
+def find_next_delimiter(remainning_text,remaining_delimiters):
+    # Cherche le prochain delimiter dans le texte parmis les delimiter de la liste, s'il n'y en a aucun revoie None
+    for delimiter in remaining_delimiters:
+        if delimiter in remainning_text :
+            return delimiter
+    return None
+
+def create_delimiters_list(borrowers:list)->list[str]:
+    # En fonction du nombre d'emprunteurs, ajoute les section Situation Professionnelle correspondantes 
+    delimiters = ["DEMANDE DE FINANCEMENT",
+                  "Projet",
+                  " Renseignements emprunteurs",
+                  " Personnes à charge"
+                  " Commentaires – Situation personnelle",
+                  " Société - Interlocuteurs",
+                  " Situation professionnelle –",
+                  "Commentaires – Situation professionnelle",
+                  " Patrimoine",
+                  " Crédit à la consommation",
+                  " Épargne",
+                  " Commentaires – Épargne"
+                  " Situation bancaire",
+                  " Habitudes de vie",
+                  " Récapitulatif projet",
+                  "Commentaires – Projet",
+                  " Données Financières",
+                  " Plan de Financement"
+                  "Garantie(s) Proposée(s)",
+                  "Assurance(s)",
+                  " Détails des prêts",
+                  " Tableau des mensualités avec assurances",
+                  " Paliers par prêt",
+                  " Détail des échéances",
+                  " Récapitulatif",
+                  " Graphique",
+                  ]
+    pro_index = delimiters.index(" Situation professionnelle –")
+    delimiters = delimiters[:pro_index]+[f" Situation professionnelle – {borrower}" for borrower in borrowers]+delimiters[pro_index:]
+    delimiters.remove(" Situation professionnelle –")
+    return delimiters
+
+def get_informations(borrowers:list,text_parts:dict):
+    
+    # Remove Monsieur or Madame from the borrowers names.
+    borrowers = [re.sub("Monsieur |Madame ","",borrower) for borrower in borrowers]
+    # informations = dict(zip(borrowers,[{"name" : None ,"birth_date" : None, "address" : None, "salary" : None}]*len(borrowers)))
+    informations = {borrower : {"birth_date": None, "address": None, "salary": None} for borrower in borrowers}
+    
+    infos = text_parts[" Renseignements emprunteurs"]
+    
+    # Birth Date 
+    birth_dates = get_row(infos,"Date de naissance")
+    birth_dates = re.findall("[0-9]*/[0-9]*/[0-9]*",birth_dates)
+    for borrower,birth_date in zip(borrowers,birth_dates):
+        informations[borrower]["birth_date"] = birth_date
+    
+    # Address TODO ajouter adresse pas française
+    address = get_row(infos,"Adresse postale")
+    address = re.findall("[0-9]+ [^0-9]*",address) #Commence par une suite de nombre puis du texte, s'arrête au porchain nombre
+
+    
+    cities = get_row(infos,"Ville")
+    cities = re.findall("[a-zA-ZÀ-ÿ-]+",cities)
+    
+    zip_codes = get_row(infos,"Code postal [0-9]",remove_beginning=False)
+    zip_codes = re.sub("Code postal","",zip_codes).strip()
+    zip_codes = re.findall("[0-9]{5}",zip_codes)
+
+    cities_from_zip_code = [get_commune_by_cp(zip_code) for zip_code in zip_codes]
+    if len(cities) > len(borrowers):
+        # TODO ajouter correction erreurs avec la base de données des villes
+        # cities = cities[:len(borrowers)]
+        cities = cities_from_zip_code
+    for borrower,addres,zip_code,city in zip(borrowers,address,zip_codes,cities):
+        informations[borrower]["address"] = f"{addres.strip()} {zip_code} {city}"
+    # Salary #TODO ajouter plusieurs salaires
+    for borrower in borrowers :
+        if f" Situation professionnelle – Monsieur {borrower}" in text_parts :
+            situation_pro = text_parts[f" Situation professionnelle – Monsieur {borrower}"]
+        elif f" Situation professionnelle – Madame {borrower}" in text_parts :
+            situation_pro = text_parts[f" Situation professionnelle – Madame {borrower}"]
+        else :
+            situation_pro = "0,00 €" # Si la personne n'a pas de situation professionnelle déclarée
+        situation_pro = re.sub("[0-9]*/[0-9]*/[0-9]*","",situation_pro) # Enlève la date pour ne pas gêner le salaire
+        salary = re.search("[0-9]{1,3} [0-9 ]{1,3},[0-9]{2} €|[0-9 ]{1,3},[0-9]{2} €",situation_pro).group() # Chercher un salaire de la forme 111 000,00 € ou 100,00 €.
+        salary = re.sub(" |€","",salary)
+        salary = float(re.sub(",",".",salary)) # Converti la virgule en point puis le str en float
+        informations[borrower]["salary"] = salary
+
+    return informations
+
+def get_commune_by_cp(zip_code:str):
+    # TODO Mettre un cas ou le code postal ne trouve pas
+    df = pd.read_csv("019HexaSmal.csv", sep=";", encoding="ISO-8859-1",dtype={"Code_postal": str})
+    row = df[df["Code_postal"] == zip_code].iloc[0]
+    if isinstance(row["Ligne_5"], str):
+        return row["Ligne_5"]
+    else :
+        return row["Nom_de_la_commune"]
+
+
+def get_row(text:str,beginning:str,remove_beginning = True)->str:
+    result = re.search(f"\n{beginning}.*",text).group()
+    if remove_beginning:
+        result = re.sub(beginning,"",result).strip()
+    return result
+
+def get_borrowers(text:str)->list[str]:
+    # Garde la partie entre DEMANDE DE FINANCEMENT et Projet afin de savoir le nom et le nombre d'emprunteurs
+    borrowers = re.search(r"DEMANDE DE FINANCEMENT(.*?)Projet",text,re.DOTALL).group(1)
+    # Enlève tout ce qui n'est pas un nom d'emprunteurs
+    borrowers = re.sub("DEMANDE DE FINANCEMENT|Projet|Associé|Caution|[()/]|Société .*\n","",borrowers).strip()
+    # Split en fonction du saut de ligne pour spérarer les emprunteurs
+    borrowers = [x.strip() for x in  borrowers.split('\n')]
+    return borrowers   
+
+def get_loan(text_parts:dict)->tuple:
+    loan = text_parts[" Détails des prêts"].lower() # Garde que ce qui est après Prêt principal amortissable de la section Détails des prêts
+    loan = loan.split("prêt principal amortissable")[1]
+    loan = loan.split("%")[0]+'%' # Enlève les données qui sont après le premier % (le taux)
+    total = loan.split("€")[0].replace("prêt principal amortissable","").strip() # Recupère le total du prêt (ce qui est avant le €)
+    taux = re.search("[0-9,]+ %",loan)[0] # Recupère le taux (juste avant le % )
+    duree = loan.split("€")[1].split(taux)[0].strip() # Recupère la durée qui se trouve entre le total et le taux
+    return total,taux,duree
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",port = 5000)
