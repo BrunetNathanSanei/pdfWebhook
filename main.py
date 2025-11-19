@@ -106,8 +106,8 @@ def carcasse():
     
     informations = get_informations(borrowers,text_parts)
     total,taux,duree = get_loan(text_parts)
-    app.logger.info(data)
     data = {"borrowers" : informations , "total" : total,"taux" : taux, "duration" :duree}
+    app.logger.info(data)
     return data
 
 @app.route("/pdf2text", methods = ['POST'])

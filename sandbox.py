@@ -150,8 +150,11 @@ def test_webhook():
     return None
 
 
-def test_send_pdf(file_name):
-    url = "http://127.0.0.1:5000/carcasse"
+def test_send_pdf(file_name,render=False):
+    if render :
+        url = "https://pdfwebhook.onrender.com/carcasse"
+    else :
+        url = "http://127.0.0.1:5000/carcasse"
     files = {'file' : open(file_name, 'rb')}
 
     r = requests.post(url=url,files=files)
@@ -342,8 +345,8 @@ def workflow(file):
 if __name__ == "__main__":
     files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
     for file in files:            
-        r = test_send_pdf(PDF_DIR + file)
-        print(r.text)
+        r = test_send_pdf(PDF_DIR + file,render=True)
+        print(r)
 
 
 
