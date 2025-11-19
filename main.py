@@ -86,13 +86,16 @@ def send_pdf():
 @app.route("/carcasse",methods = ['POST'])
 def carcasse():
     if "file" not in request.files :
+        app.logger.info("Aucun fichier PDF reçu")
         return "Aucun fichier PDF reçu", 400
+
     file = request.files["file"]
     extension = file.filename.split('.')[-1]
-    print(f'file extension : {extension}')
+    app.logger.info(f'file extension : {extension}')
     if extension == 'pdf' :
         text = extract_pdf(file.stream)
     else :
+        app.logger.info("Aucun fichier PDF reçu")
         return "Aucun fichier PDF reçu", 400
     
     text = preprocessing(text)
@@ -103,7 +106,7 @@ def carcasse():
     
     informations = get_informations(borrowers,text_parts)
     total,taux,duree = get_loan(text_parts)
-
+    app.logger.info(data)
     data = {"borrowers" : informations , "total" : total,"taux" : taux, "duration" :duree}
     return data
 
