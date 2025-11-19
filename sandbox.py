@@ -138,9 +138,11 @@ def test_pdf():
             print("⚠️ Aucune donnée texte (probablement un scan ou un PDF image).")
     return None
 
-def test_webhook():
-    url = "https://pdfwebhook.onrender.com/test"
-    url_local = "http://192.168.1.107:5000/test"
+def test_webhook(render=False):
+    if render :
+        url = "https://pdfwebhook.onrender.com/carcasse"
+    else :
+        url = "http://127.0.0.1:5000/carcasse"
     data = {
         "file_url" : "https://www.yvelines.fr/wp-content/uploads/2009/11/modele-bulletin-de-salaire.pdf"
     }
@@ -343,10 +345,12 @@ def workflow(file):
 
 
 if __name__ == "__main__":
-    files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
-    for file in files:            
-        r = test_send_pdf(PDF_DIR + file,render=False)
-        print(r.text)
+    render = False
+    test_webhook(render=render)
+    # files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
+    # for file in files:            
+    #     r = test_send_pdf(PDF_DIR + file,render=render)
+    #     print(r.text)
 
 
 

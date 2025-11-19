@@ -87,20 +87,24 @@ def send_pdf():
 def carcasse():
     if len(request.form) > 0:
         file_url = request.form["file_url"]
-        file = requests.get(file_url)   
+        file = requests.get(file_url)
+        text = extract_pdf(BytesIO(file.content))
+        print(text)
     elif "file" in request.files :
         file = request.files["file"]
+        text = extract_pdf(file.stream)
+        print(text)
     else :
         app.logger.info("Aucun fichier reçu")
         return "Aucun fichier reçu", 400
-
-    extension = file.filename.split('.')[-1]
-    app.logger.info(f'file extension : {extension}')
-    if extension == 'pdf' :
-        text = extract_pdf(file.stream)
-    else :
-        app.logger.info("Mauvais format de fichier")
-        return "Mauvais format de fichier", 400
+    
+    # extension = file.filename.split('.')[-1]
+    # app.logger.info(f'file extension : {extension}')
+    # if extension == 'pdf' :
+    #     text = extract_pdf(file.stream)
+    # else :
+    #     app.logger.info("Mauvais format de fichier")
+    #     return "Mauvais format de fichier", 400
     
     text = preprocessing(text)
     borrowers = get_borrowers(text)
