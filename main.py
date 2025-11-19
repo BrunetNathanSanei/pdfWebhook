@@ -7,6 +7,7 @@ import logging
 from io import BytesIO
 import requests
 import re
+import pandas as pd
 
 app = Flask(__name__)
 img_extension = {}

@@ -151,11 +151,11 @@ def test_webhook():
 
 
 def test_send_pdf(file_name):
-    url = "http://127.0.0.1:5000/pdf2text"
+    url = "http://127.0.0.1:5000/carcasse"
     files = {'file' : open(file_name, 'rb')}
 
     r = requests.post(url=url,files=files)
-    return r.text
+    return r
 
 def main2():
     pdf_dir = "demande_financement/pdf/"
@@ -341,11 +341,9 @@ def workflow(file):
 
 if __name__ == "__main__":
     files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
-    for file in files:             
-        if True:
-            text,data = workflow(file)
-            print(data)
-        
+    for file in files:            
+        r = test_send_pdf(PDF_DIR + file)
+        print(r.text)
 
 
 
