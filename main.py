@@ -85,18 +85,22 @@ def send_pdf():
 
 @app.route("/carcasse",methods = ['POST'])
 def carcasse():
-    if "file" not in request.files :
-        app.logger.info("Aucun fichier PDF reçu")
-        return "Aucun fichier PDF reçu", 400
+    if len(request.form) > 0:
+        file_url = request.form["file_url"]
+        file = requests.get(file_url)   
+    elif "file" in request.files :
+        file = request.files["file"]
+    else :
+        app.logger.info("Aucun fichier reçu")
+        return "Aucun fichier reçu", 400
 
-    file = request.files["file"]
     extension = file.filename.split('.')[-1]
     app.logger.info(f'file extension : {extension}')
     if extension == 'pdf' :
         text = extract_pdf(file.stream)
     else :
-        app.logger.info("Aucun fichier PDF reçu")
-        return "Aucun fichier PDF reçu", 400
+        app.logger.info("Mauvais format de fichier")
+        return "Mauvais format de fichier", 400
     
     text = preprocessing(text)
     borrowers = get_borrowers(text)

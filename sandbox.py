@@ -345,8 +345,8 @@ def workflow(file):
 if __name__ == "__main__":
     files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
     for file in files:            
-        r = test_send_pdf(PDF_DIR + file,render=True)
-        print(r)
+        r = test_send_pdf(PDF_DIR + file,render=False)
+        print(r.text)
 
 
 
