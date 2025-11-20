@@ -111,8 +111,8 @@ def carcasse():
     text_parts = split_text(text=text,delimiters=delimiters)
     
     informations = get_informations(borrowers,text_parts)
-    total,taux,duree = get_loan(text_parts)
-    data = {"borrowers" : informations , "total" : total,"taux" : taux, "duration" :duree}
+    total,taux,duree,contexte = get_loan(text_parts)
+    data = {"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
     app.logger.info(data)
     return data
 
@@ -235,7 +235,7 @@ def get_informations(borrowers:list,text_parts:dict):
     # Remove Monsieur or Madame from the borrowers names.
     borrowers = [re.sub("Monsieur |Madame ","",borrower) for borrower in borrowers]
     # informations = dict(zip(borrowers,[{"name" : None ,"birth_date" : None, "address" : None, "salary" : None}]*len(borrowers)))
-    informations = {borrower : {"birth_date": None, "address": None, "salary": None} for borrower in borrowers}
+    informations = {borrower : {"name" : borrower,"birth_date": None, "address": None, "salary": None} for borrower in borrowers}
     
     infos = text_parts[" Renseignements emprunteurs"]
     
@@ -312,7 +312,11 @@ def get_loan(text_parts:dict)->tuple:
     total = loan.split("€")[0].replace("prêt principal amortissable","").strip() # Recupère le total du prêt (ce qui est avant le €)
     taux = re.search("[0-9,]+ %",loan)[0] # Recupère le taux (juste avant le % )
     duree = loan.split("€")[1].split(taux)[0].strip() # Recupère la durée qui se trouve entre le total et le taux
-    return total,taux,duree
+    contexte = f"Prêt de {total}€ sur {duree} mois avec un taux de {taux}"
+    duree = int(duree)
+    taux = float(taux[:-2].replace(",","."))
+    total = float(total.replace(",",".").replace(" ",""))
+    return total,taux,duree,contexte
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",port = 5000)

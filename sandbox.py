@@ -346,8 +346,10 @@ def workflow(file):
 
 if __name__ == "__main__":
     render = False
-    test_webhook(render=render)
-    # files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
+    # test_webhook(render=render)
+    files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
+    r = test_send_pdf(PDF_DIR + files[0],render=render)
+    print(r.text)
     # for file in files:            
     #     r = test_send_pdf(PDF_DIR + file,render=render)
     #     print(r.text)
