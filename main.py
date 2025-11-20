@@ -89,11 +89,9 @@ def carcasse():
         file_url = request.form["file_url"]
         file = requests.get(file_url)
         text = extract_pdf(BytesIO(file.content))
-        print(text)
     elif "file" in request.files :
         file = request.files["file"]
         text = extract_pdf(file.stream)
-        print(text)
     else :
         app.logger.info("Aucun fichier reçu")
         return "Aucun fichier reçu", 400
