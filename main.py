@@ -112,7 +112,7 @@ def carcasse():
     
     informations = get_informations(borrowers,text_parts)
     total,taux,duree,contexte = get_loan(text_parts)
-    data = {"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
+    data = {"text" : text,"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
     app.logger.info(data)
     return data
 
