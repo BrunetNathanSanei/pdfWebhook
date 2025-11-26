@@ -8,6 +8,7 @@ from io import BytesIO
 import requests
 import re
 import pandas as pd
+import json
 
 app = Flask(__name__)
 img_extension = {}
@@ -22,12 +23,13 @@ def webhook():
     
     file = request.files["file"]
     extension = file.filename.split('.')[-1]
-    print('file extension : {extension}')
+    print(f'file extension : {extension}')
     if extension == 'pdf' :
         text = ""
         with pdfplumber.open(file.stream) as pdf :
             for page in pdf.pages :
-                text += page.extract_text() + "\n"
+                content = page.extract_text() or ""
+                text += content + "\n"
         print(f'text : {text}')
         return text
     elif extension.lower() in img_extension:
@@ -94,26 +96,22 @@ def carcasse():
         text = extract_pdf(file.stream)
     else :
         app.logger.info("Aucun fichier reçu")
-        return "Aucun fichier reçu", 400
-    
-    # extension = file.filename.split('.')[-1]
-    # app.logger.info(f'file extension : {extension}')
-    # if extension == 'pdf' :
-    #     text = extract_pdf(file.stream)
-    # else :
-    #     app.logger.info("Mauvais format de fichier")
-    #     return "Mauvais format de fichier", 400
+        return "Aucun fichier reçu", 400   
     
     text = preprocessing(text)
     borrowers = get_borrowers(text)
     delimiters = create_delimiters_list(borrowers)
     
     text_parts = split_text(text=text,delimiters=delimiters)
-    
+    if False : 
+        with open("text_parts.json",'w',encoding='utf-8') as f:
+            json.dump(text_parts,f,indent=4,ensure_ascii=False)
+    text = text_without_com(text_parts=text_parts)
+    print("En effet, Mathieu" in text)
     informations = get_informations(borrowers,text_parts)
     total,taux,duree,contexte = get_loan(text_parts)
     data = {"text" : text,"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
-    app.logger.info(data)
+    # app.logger.info(data)
     return data
 
 @app.route("/pdf2text", methods = ['POST'])
@@ -138,6 +136,13 @@ def extract_pdf(stream):
             text += page.extract_text() + "\n"
     return text
 
+def text_without_com(text_parts:dict)->str:
+    text = ""
+    for title in text_parts:
+        text += title+ '\n'
+        text+=text_parts[title]
+    return text
+
 
 def clean_text(text)->str:
     remove_pattern = ["GALLEA Quentin","06-80-75-04-20", "quentin@credit-avenue.fr","Pour vous aider à faire valoir vos droits"]
@@ -148,7 +153,7 @@ def clean_text(text)->str:
     for pattern in remove_pattern :
         text = text.replace(pattern,"")
     # Garde tout ce qui est après "Renseignements emprunteurs"
-    print(f"split_pattern_renseignement in text : {split_pattern_renseignement in text}")
+    # print(f"split_pattern_renseignement in text : {split_pattern_renseignement in text}")
     if split_pattern_renseignement in text :
         text = text.split(split_pattern_renseignement)[1]
     # Coupe en 2 à "Situation professionnelle"
@@ -168,9 +173,16 @@ def clean_text(text)->str:
         return text
 
 def preprocessing(text:str)->str:
-    pattern_list = ["Établie le [0-9/]*\n","GALLEA Quentin\n","06-80-75-04-20\n","quentin@credit-avenue.fr\n","[0-9]{1,2}/[0-9]{1,2}\n"]
+    pattern_list = ["Établie le [0-9/]*\n",
+                    "GALLEA Quentin\n","06-80-75-04-20\n",
+                    "quentin@credit-avenue.fr\n",
+                    "[0-9]{1,2}/[0-9]{1,2}\n",
+                    ]
     for pattern in pattern_list :
         text = re.sub(pattern,"",text)
+    str_list = ["www.acpr.banque-france.fr)","En cas de réclamation, envoyez un courrier à l’attention de la Direction","Nous nous engageons \u00e0 en accuser r\u00e9ception sous 10 jours et \u00e0 apporter une r\u00e9ponse dans un d\u00e9lai maximum de 2 mois\n","Entreprise soumise au contr\u00f4le de l\u2019Autorit\u00e9 de Contr\u00f4le Prudentiel et de R\u00e9solution (ACPR) situ\u00e9e 4 Place de Budapest CS 92459 75436 Paris Cedex 09","Assurance de responsabilit\u00e9 civile professionnelle conforme aux articles L512-6 , L512-7 et R512-14 du Code des Assurances"]
+    for string in str_list :
+        text = text.replace(string,"")
     return text
 
 def split_text(text:str,delimiters:list,verbose=False):
@@ -182,12 +194,19 @@ def split_text(text:str,delimiters:list,verbose=False):
             if verbose :
                 print(f"delimiter : {delimiter} | next_delimiter : {next_delimiter}")
             if next_delimiter is not None :
-                extracted_text = re.search(f"{delimiter}.*{next_delimiter}", text, re.DOTALL).group()
-                extracted_text = re.sub(f"{delimiter}|{next_delimiter}","",extracted_text).strip()
+                m  = re.search(f"{delimiter}.*{next_delimiter}", text, re.DOTALL)
+                if not m :
+                    extracted_text = ""
+                else :
+                    extracted_text = m.group()
+                    extracted_text = re.sub(f"{delimiter}|{next_delimiter}","",extracted_text).strip()
                 text_parts[delimiter] = extracted_text
             else :
                 text_parts[delimiter] = text.split(delimiter)[1]
-    return text_parts  
+    str_list = ["Commentaires – Situation professionnelle"," Commentaires – Situation personnelle"," Commentaires – Épargne","Commentaires – Projet"]
+    for key in str_list:
+        text_parts.pop(key,None)
+    return text_parts
 
 def find_next_delimiter(remainning_text,remaining_delimiters):
     # Cherche le prochain delimiter dans le texte parmis les delimiter de la liste, s'il n'y en a aucun revoie None
@@ -199,9 +218,8 @@ def find_next_delimiter(remainning_text,remaining_delimiters):
 def create_delimiters_list(borrowers:list)->list[str]:
     # En fonction du nombre d'emprunteurs, ajoute les section Situation Professionnelle correspondantes 
     delimiters = ["DEMANDE DE FINANCEMENT",
-                  "Projet",
                   " Renseignements emprunteurs",
-                  " Personnes à charge"
+                  " Personnes à charge",
                   " Commentaires – Situation personnelle",
                   " Société - Interlocuteurs",
                   " Situation professionnelle –",
@@ -209,13 +227,13 @@ def create_delimiters_list(borrowers:list)->list[str]:
                   " Patrimoine",
                   " Crédit à la consommation",
                   " Épargne",
-                  " Commentaires – Épargne"
+                  " Commentaires – Épargne",
                   " Situation bancaire",
                   " Habitudes de vie",
                   " Récapitulatif projet",
                   "Commentaires – Projet",
                   " Données Financières",
-                  " Plan de Financement"
+                  " Plan de Financement",
                   "Garantie(s) Proposée(s)",
                   "Assurance(s)",
                   " Détails des prêts",
@@ -291,7 +309,10 @@ def get_commune_by_cp(zip_code:str):
 
 
 def get_row(text:str,beginning:str,remove_beginning = True)->str:
-    result = re.search(f"\n{beginning}.*",text).group()
+    m = re.search(f"\n{beginning}.*",text)
+    if not m :
+        return ""
+    result = m.group()
     if remove_beginning:
         result = re.sub(beginning,"",result).strip()
     return result
