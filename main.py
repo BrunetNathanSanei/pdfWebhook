@@ -104,7 +104,7 @@ def carcasse():
     
     text_parts = split_text(text=text,delimiters=delimiters)
     if False : 
-        with open("text_parts.json",'w',encoding='utf-8') as f:
+        with open("data/text_parts.json",'w',encoding='utf-8') as f:
             json.dump(text_parts,f,indent=4,ensure_ascii=False)
     text = text_without_com(text_parts=text_parts)
     print("En effet, Mathieu" in text)
@@ -128,6 +128,14 @@ def pdf2text():
     else :
         return "Aucun fichier PDF reçu", 400 
     
+
+@app.route("/zip", methods = ['POST'])
+def zip():
+    if len(request.form) > 0:
+        file_url = request.form["file_url"]
+        file = requests.get(file_url)
+        app.logger.info("file")
+    return jsonify({"status" : "get ok"}),200
 
 def extract_pdf(stream):
     text = ""

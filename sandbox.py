@@ -2,11 +2,13 @@ import requests
 import pdfplumber
 from io import BytesIO
 from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import re
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
 import numpy as np
+from zipfile import ZipFile
 
 
 PDF_DIR = "demande_financement/pdf/"
@@ -171,17 +173,11 @@ def main2():
         with open(join(result_dir,file).replace(".pdf",".txt"),"w") as f:
             f.write(text)
 
-def postprocessing(text:str)->dict:
-    return {}
-
 def preprocessing(text:str)->str:
     pattern_list = ["Établie le [0-9/]*\n","GALLEA Quentin\n","06-80-75-04-20\n","quentin@credit-avenue.fr\n","[0-9]{1,2}/[0-9]{1,2}\n"]
     for pattern in pattern_list :
         text = re.sub(pattern,"",text)
     return text
-
-def test_processing():
-    pass
 
 def extract_pdf(file_name:str):
     text = ""
@@ -343,26 +339,27 @@ def workflow(file):
     total,taux,duree = get_loan(text_parts)
     return text,{"borrowers" : informations , "total" : total,"taux" : taux, "duration" :duree}
 
-
-if __name__ == "__main__":
+def workflow2():
     render = False
-    # test_webhook(render=render)
     files = [f for f in listdir(PDF_DIR) if isfile(join(PDF_DIR,f))]
     r = test_send_pdf(PDF_DIR + files[0],render=render)
-    print(r.text)
-    # for file in files:            
-    #     r = test_send_pdf(PDF_DIR + file,render=render)
-    #     print(r.text)
+    return None
 
-
-
-    # print(informations)
-    # delimiter1 = "DEMANDE DE FINANCEMENT"
-    # delimiter2 = "Projet"
-
-    # print(re.search(f"{delimiter1}.*{delimiter2}", text_test, re.DOTALL).group()[:-len(delimiter2)-1])
-
-    #main2()
+def main3():
+    folder = "zip/"
+    zip_name = "Partage_MINITAUX_Actelo.zip"
+    with ZipFile(folder + zip_name ,'r') as zip_object :
+        zip_object.extractall(folder)
     
+def main4():
+    DIR_PATH = "/home/nathan/workspace/pdfWebhook/zip/Partage_MINITAUX_Actelo/Pièce d'identité (CNI Passeport Titre de séjour...)/"
+    file_name = "image (1).pdf"
 
-    #test_webhook()
+    reader = PdfReader(DIR_PATH + file_name)
+    page = reader.pages[0]
+    for i, image_file_object in enumerate(page.images):
+        file_name = "out-image-" + str(i) + "-" + image_file_object.name
+        image_file_object.image.save(file_name)
+    
+if __name__ == "__main__":
+    main4()
