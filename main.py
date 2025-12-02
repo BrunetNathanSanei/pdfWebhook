@@ -134,7 +134,7 @@ def zip():
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
-        app.logger.info(file)
+        app.logger.info(BytesIO(file.content))
     return jsonify({"status" : "get ok"}),200
 
 def extract_pdf(stream):
