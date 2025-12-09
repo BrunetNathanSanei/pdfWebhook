@@ -140,7 +140,6 @@ def pdf2text():
         
     else :
         return "Aucun fichier PDF reçu", 400 
-    
 
 @app.route("/archive", methods = ['POST'])
 def archive():
@@ -157,7 +156,6 @@ def archive():
     create_dir(zip_dir)
     create_dir(image_dir)
     # Get the zip and extract it in the folder
-    file = requests.get(file_url)
     zip = ZipFile(BytesIO(file.content))
     zip.extractall(zip_dir)
     data = {}
@@ -186,12 +184,11 @@ def archive():
                 "type" : "document_url",
                 "document_url" : upload_pdf(filename=file_path)
             },
-            include_image_base64=True
+            include_image_base64=False
             )
             full_text = ""
-            for page in ocr_response.pages:
-                page_text = page.markdown
-                full_text += page_text
+            pages  = [page.markdown for page in ocr_response.pages]
+            full_text = "\n".join(pages)
             full_text = post_processing_mistral(full_text)
             data[file_name] = full_text          
         else :
@@ -219,12 +216,12 @@ def extract_pdf(file_name : str,stream = None,pdf_dir = PDF_DIR):
     text = ""
     if stream is not None :
         with pdfplumber.open(stream) as pdf :
-            for page in pdf.pages :
-                text += page.extract_text() + "\n"
+            pages = [page.extract_text() for page in pdf.pages]
+            text = "\n".join(pages)
     else :
         with pdfplumber.open(("").join([pdf_dir,file_name])) as pdf :
-            for page in pdf.pages :
-                text += page.extract_text() + "\n"
+            pages = [page.extract_text() for page in pdf.pages]
+            text = "\n".join(pages)
     return text
 
 
