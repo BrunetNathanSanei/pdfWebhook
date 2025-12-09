@@ -126,34 +126,21 @@ def test_botpress_file():
         print(pdf.pages[0].extract_text())
     return None
 
-def extract_pdf_fields(path):
-    reader = PdfReader(path)
-    print(reader)
-    # fields = reader.get_fields()
-    # return {k: v.get('/V') for k, v in fields.items()}
 
-def test_pdf():
-    with pdfplumber.open("Demande_de_financement - 2025-04-15T113120.447 (1).pdf") as pdf:
-        text = pdf.pages[0].extract_text()
-        if text:
-            print("✅ Le PDF contient du texte visible.")
-            print(text)
-        else:
-            print("⚠️ Aucune donnée texte (probablement un scan ou un PDF image).")
-    return None
-
-def test_webhook(render=False):
-    if render :
+def test_carcasse(online = False, file_path = None, file_url = None):
+    if online :
         url = "https://pdfwebhook.onrender.com/carcasse"
-    else :
+    else : 
         url = "http://127.0.0.1:5000/carcasse"
-    data = {
-        "file_url" : "https://www.yvelines.fr/wp-content/uploads/2009/11/modele-bulletin-de-salaire.pdf"
-    }
-    r = requests.post(url=url,data=data)
-    print(r.status_code)
-    print(r.text)
-    return None
+    if file_path is not None :
+        files = {'file' : open(file_path, 'rb')}
+        r = requests.post(url=url,files=files)
+    elif file_url is not None:
+        data = {"file_url" : file_url}
+        r = requests.post(url=url,data=data)
+    else :
+        return None
+    return r
 
 
 def test_send_pdf(file_name,render=False):
@@ -442,9 +429,9 @@ def get_zip(url : str,extract_dir = "zip/") :
 
 def test_zip(zip_url : str, render = False):
     if render :
-        url = "https://pdfwebhook.onrender.com/zip"
+        url = "https://pdfwebhook.onrender.com/archive"
     else :
-        url = "http://127.0.0.1:5000/zip"
+        url = "http://127.0.0.1:5000/archive"
     data = {
         "file_url" : zip_url
     }
@@ -458,8 +445,10 @@ def workflow_zip():
     url_zip = "https://files.bpcontent.cloud/2025/12/08/16/20251208161531-7UYRS59O.zip"
     test_zip(zip_url = url_zip)
 
-def test_mistral():
-    API_KEY= "kDmMno9Tv66m5rxeZnEVYBLPjoZ5ys9F"
+def workflow_carcasse():
+    file_url = "https://files.bpcontent.cloud/2025/12/09/13/20251209131146-M0H4UGNH.pdf"
+    result = test_carcasse(online=False,file_url=file_url)
+    print (result.text)
 
 if __name__ == "__main__":
-    workflow_zip()
+    workflow_carcasse()

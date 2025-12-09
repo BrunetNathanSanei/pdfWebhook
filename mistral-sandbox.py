@@ -23,6 +23,7 @@ def main():
         text = page.markdown
         full_text += text
     text = post_processing_mistral(text)
+    print(text)
 
 def post_processing_mistral(text:str):
     pattern_list = pattern_list = [
@@ -54,6 +55,5 @@ def load_image(image_path):
   return base64_url
 
 if __name__ == "__main__":
-    api_key = os.environ["MISTRAL_API_KEY"]
-    print(api_key)
+   main()
 

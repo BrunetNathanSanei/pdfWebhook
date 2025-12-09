@@ -104,10 +104,10 @@ def carcasse():
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
-        text = extract_pdf(BytesIO(file.content))
+        text = extract_pdf(file_name=None, stream=BytesIO(file.content))
     elif "file" in request.files :
         file = request.files["file"]
-        text = extract_pdf(file.stream)
+        text = extract_pdf(file_name=None,stream=file.stream)
     else :
         app.logger.info("Aucun fichier reçu")
         return "Aucun fichier reçu", 400   
@@ -121,7 +121,6 @@ def carcasse():
         with open("data/text_parts.json",'w',encoding='utf-8') as f:
             json.dump(text_parts,f,indent=4,ensure_ascii=False)
     text = text_without_com(text_parts=text_parts)
-    print("En effet, Mathieu" in text)
     informations = get_informations(borrowers,text_parts)
     total,taux,duree,contexte = get_loan(text_parts)
     data = {"text" : text,"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
@@ -143,8 +142,8 @@ def pdf2text():
         return "Aucun fichier PDF reçu", 400 
     
 
-@app.route("/zip", methods = ['POST'])
-def zip():
+@app.route("/archive", methods = ['POST'])
+def archive():
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
@@ -442,10 +441,6 @@ def list_files_walk(start_path='.'):
         for file in files:
             files_list.append(join(root, file))
     return files_list
-
-
-def ocr(file_name):
-    return f"{file_name} -> ocr result"
 
 def clean(dir : str) -> None:
     # Ajouter supprimer dossier.
