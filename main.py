@@ -165,6 +165,7 @@ def archive():
     list_files = list_files_walk(zip_dir)
     for file_path in list_files:
         file_name = file_path.split('/')[-1]
+        app.logger.info(file_name)
         if file_path[-3:] != 'pdf':
             continue
         text = extract_pdf(file_path,pdf_dir="",stream=None)
