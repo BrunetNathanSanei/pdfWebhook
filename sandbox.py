@@ -2,12 +2,14 @@ import requests
 import pdfplumber
 from io import BytesIO
 from PyPDF2 import PdfReader
-from pypdf import PdfReader
+# from pypdf import PdfReader
 import re
-from os import listdir
+import os
+from os import listdir, remove
 from os.path import isfile, join
 import pandas as pd
 import numpy as np
+import io
 from zipfile import ZipFile
 
 
@@ -179,9 +181,9 @@ def preprocessing(text:str)->str:
         text = re.sub(pattern,"",text)
     return text
 
-def extract_pdf(file_name:str):
+def extract_pdf(file_name:str,pdf_dir = PDF_DIR):
     text = ""
-    with pdfplumber.open(("").join([PDF_DIR,file_name])) as pdf :
+    with pdfplumber.open(("").join([pdf_dir,file_name])) as pdf :
         for page in pdf.pages :
             text += page.extract_text() + "\n"
     return text
@@ -360,6 +362,104 @@ def main4():
     for i, image_file_object in enumerate(page.images):
         file_name = "out-image-" + str(i) + "-" + image_file_object.name
         image_file_object.image.save(file_name)
-    
+
+def zip():
+    file_url = "https://files.bpcontent.cloud/2025/12/03/15/20251203152054-3TAZ1V2N.zip"
+    file_path = "/home/nathan/workspace/pdfWebhook/zip/Partage_MINITAUX_Actelo/archive2.zip"
+    clean_files = True
+    online = False
+    zip_dir = "zip/test/"
+    image_dir = "image/"
+    # Get the zip and extract it in the folder
+    if online :
+        file = requests.get(file_url)
+        zip = ZipFile(io.BytesIO(file.content))
+    else : 
+        zip = ZipFile(file_path)
+    zip.extractall(zip_dir)
+    data = {}
+    # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
+    list_files = list_files_walk(zip_dir)
+
+    list_files = list(filter(lambda x : x is not None,list_files))
+    for file_path in list_files:
+        file_name = file_path.split('/')[-1]
+        # print(file_name)
+        # print(os.path.isdir(file_path))
+        if file_path[-3:] != 'pdf':
+            continue
+        text = extract_pdf(file_path,pdf_dir="")
+        if text.strip() == "" :
+            reader = PdfReader(file_path)
+            page = reader.pages[0]
+            for i, image_file_object in enumerate(page.images):
+                file_name = f"{image_dir}{file_name.split('.')[0]}-{str(i)}-{image_file_object.name}" # image dir, name of the pdf the image is from, number of the image
+                image_file_object.image.save(file_name)
+                text = ocr(file_name)
+                # Store the text retru nby the ocr
+                data[file_name] = text
+        else :
+            # Store the text from pdf
+            data[file_name] = text
+    # Remove all the files extracted and the images saved
+    if clean_files :
+        clean(zip_dir)
+        clean(image_dir)
+
+def list_files_walk(start_path='.'):
+    files_list = []
+    for root, dirs, files in os.walk(start_path):
+        for file in files:
+            files_list.append(os.path.join(root, file))
+    return files_list
+
+
+def ocr(file_name):
+    return f"{file_name} -> ocr result"
+
+def clean(dir : str) -> None:
+    # Ajouter supprimer dossier.
+    for f in list_files_walk(dir):
+        if os.path.exists(f) :
+            remove(f)
+        else :
+            print("File does not exist")
+    return None
+
+def get_pdf(dir : str):
+    for f in listdir(dir):
+        file_path = dir + f
+        if file_path[-3:] != 'pdf':
+            continue
+        reader = PdfReader(file_path)
+
+def get_zip(url : str,extract_dir = "zip/") :
+    file = requests.get(url)
+    zip = ZipFile(io.BytesIO(file.content))
+    zip.extractall(extract_dir)
+    return None
+
+
+def test_zip(zip_url : str, render = False):
+    if render :
+        url = "https://pdfwebhook.onrender.com/zip"
+    else :
+        url = "http://127.0.0.1:5000/zip"
+    data = {
+        "file_url" : zip_url
+    }
+    print(data)
+    r = requests.post(url=url,data=data)
+    print(r.status_code)
+    print(r.text)
+    return None
+
+def workflow_zip():   
+    url_zip = "https://files.bpcontent.cloud/2025/12/08/16/20251208161531-7UYRS59O.zip"
+    test_zip(zip_url = url_zip)
+
+def test_mistral():
+    API_KEY= "kDmMno9Tv66m5rxeZnEVYBLPjoZ5ys9F"
+
 if __name__ == "__main__":
-    main4()
+    workflow_zip()

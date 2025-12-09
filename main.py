@@ -9,9 +9,22 @@ import requests
 import re
 import pandas as pd
 import json
+from zipfile import ZipFile
+from PyPDF2 import PdfReader
+from os import listdir, remove,walk,mkdir
+from os.path import isfile, join, exists
+from mistralai import Mistral
+import datauri
+import os
+import base64
+import mimetypes
 
 app = Flask(__name__)
 img_extension = {}
+
+PDF_DIR="/zip"
+MISTRAL_API_KEY = "kDmMno9Tv66m5rxeZnEVYBLPjoZ5ys9F"
+client = Mistral(api_key = MISTRAL_API_KEY)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -135,14 +148,84 @@ def zip():
         file_url = request.form["file_url"]
         file = requests.get(file_url)
         app.logger.info(BytesIO(file.content))
-    return jsonify({"status" : "get ok"}),200
+    else: 
+        return "Aucun fichier PDF reçu", 400
+    clean_files = True
+    zip_dir = "zip/test/"
+    image_dir = "image/"
+    # Create the dir if does not exist
+    create_dir(zip_dir)
+    create_dir(image_dir)
+    # Get the zip and extract it in the folder
+    file = requests.get(file_url)
+    zip = ZipFile(BytesIO(file.content))
+    zip.extractall(zip_dir)
+    data = {}
+    # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
+    list_files = list_files_walk(zip_dir)
+    for file_path in list_files:
+        file_name = file_path.split('/')[-1]
+        if file_path[-3:] != 'pdf':
+            continue
+        text = extract_pdf(file_path,pdf_dir="",stream=None)
+        if text.strip() == "" :
+            
+            # reader = PdfReader(file_path)
+            # page = reader.pages[0]
+            # for i, image_file_object in enumerate(page.images):
+            #     image_name = f"{image_dir}{file_name.split('.')[0]}-{str(i)}-{image_file_object.name}" # image dir, name of the pdf the image is from, number of the image
+            #     image_file_object.image.save(image_name)
+            #     text = ocr(image_name)
+            #     # Store the text retru nby the ocr
+            #     data[image_name] = text
+            
+            ocr_response = client.ocr.process(
+            model = "mistral-ocr-latest",
+            document = {
+                "type" : "document_url",
+                "document_url" : upload_pdf(filename=file_path)
+            },
+            include_image_base64=True
+            )
+            full_text = ""
+            for page in ocr_response.pages:
+                page_text = page.markdown
+                full_text += page_text
+            full_text = post_processing_mistral(full_text)
+            data[file_name] = full_text          
+        else :
+            # Store the text from pdf
+            data[file_name] = text
+    # Remove all the files extracted and the images saved
+    if clean_files :
+        clean(zip_dir)
+        clean(image_dir)
+    
+    return data,200
 
-def extract_pdf(stream):
+def create_dir(dir):
+    try:
+        mkdir(dir)
+        print(f"Directory '{dir}' created successfully.")
+    except FileExistsError:
+        print(f"Directory '{dir}' already exists.")
+    except PermissionError:
+        print(f"Permission denied: Unable to create '{dir}'.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def extract_pdf(file_name : str,stream = None,pdf_dir = PDF_DIR):
     text = ""
-    with pdfplumber.open(stream) as pdf :
-        for page in pdf.pages :
-            text += page.extract_text() + "\n"
+    if stream is not None :
+        with pdfplumber.open(stream) as pdf :
+            for page in pdf.pages :
+                text += page.extract_text() + "\n"
+    else :
+        with pdfplumber.open(("").join([pdf_dir,file_name])) as pdf :
+            for page in pdf.pages :
+                text += page.extract_text() + "\n"
     return text
+
 
 def text_without_com(text_parts:dict)->str:
     text = ""
@@ -351,6 +434,47 @@ def get_loan(text_parts:dict)->tuple:
     taux = float(taux[:-2].replace(",","."))
     total = float(total.replace(",",".").replace(" ",""))
     return total,taux,duree,contexte
+
+def list_files_walk(start_path='.'):
+    files_list = []
+    for root, dirs, files in walk(start_path):
+        for file in files:
+            files_list.append(join(root, file))
+    return files_list
+
+
+def ocr(file_name):
+    return f"{file_name} -> ocr result"
+
+def clean(dir : str) -> None:
+    # Ajouter supprimer dossier.
+    for f in list_files_walk(dir):
+        if exists(f) :
+            remove(f)
+        else :
+            print("File does not exist")
+    return None
+
+def upload_pdf(filename : str):
+    uploaded_pdf = client.files.upload(
+       file = {
+          "file_name" : filename,
+          "content" : open(filename,"rb")
+       },
+       purpose = "ocr"
+    )
+    signed_url = client.files.get_signed_url(file_id=uploaded_pdf.id)
+    return signed_url.url
+
+
+def post_processing_mistral(text:str):
+    pattern_list = pattern_list = [
+    r"!\[img-\d+\.(?:jpg|jpeg|png|gif)\]\(img-\d+\.(?:jpg|jpeg|png|gif)\)"
+    ]
+    for pattern in pattern_list:
+       text = re.sub(pattern,"",text)
+       text = text.strip()
+    return text
 
 if __name__ == "__main__":
     app.run(host = "0.0.0.0",port = 5000)
