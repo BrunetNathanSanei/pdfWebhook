@@ -23,8 +23,9 @@ app = Flask(__name__)
 img_extension = {}
 
 PDF_DIR="/zip"
-MISTRAL_API_KEY = "kDmMno9Tv66m5rxeZnEVYBLPjoZ5ys9F"
-client = Mistral(api_key = MISTRAL_API_KEY)
+api_key = os.environ.get("MISTRAL_API_KEY")
+print(api_key)
+client = Mistral(api_key = api_key)
 
 logging.basicConfig(level=logging.INFO)
 

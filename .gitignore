@@ -10,3 +10,6 @@ Partage_MINITAUX_Actelo.zip
 zip/*
 out-image-0-I0.jpg
 image/
+*.jpg
+mistral-sandbox.py
+key.txt

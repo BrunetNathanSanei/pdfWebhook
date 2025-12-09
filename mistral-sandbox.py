@@ -54,5 +54,6 @@ def load_image(image_path):
   return base64_url
 
 if __name__ == "__main__":
-    main()
+    api_key = os.environ["MISTRAL_API_KEY"]
+    print(api_key)
 
