@@ -22,7 +22,7 @@ img_extension = {}
 
 PDF_DIR="/zip"
 api_key = os.environ.get("MISTRAL_API_KEY")
-print(api_key)
+# print(api_key)
 client = Mistral(api_key = api_key)
 
 logging.basicConfig(level=logging.INFO)
