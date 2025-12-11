@@ -114,12 +114,12 @@ def pdf2text():
 @app.route("/archive", methods = ['POST'])
 def archive():
     app.logger.info("Requête reçu sur /archive")
-    if len(request.form) > 0:
-        file_url = request.form["file_url"]
-        file = requests.get(file_url)
-        app.logger.info(BytesIO(file.content))
-    else: 
-        return "Aucun fichier PDF reçu", 400
+    # if len(request.form) > 0:
+    file_url = request.form["file_url"]
+    file = requests.get(file_url)
+    app.logger.info(BytesIO(file.content))
+    # else: 
+    #     return "Aucun fichier PDF reçu", 400
     clean_files = True
     zip_dir = "zip/test/"
     image_dir = "image/"
@@ -160,12 +160,21 @@ def archive():
             full_text = ""
             pages  = [page.markdown for page in ocr_response.pages]
             full_text = "\n".join(pages)
-            full_text = post_processing_mistral(full_text)
-            data[file_name] = full_text          
+            text = post_processing_mistral(full_text)         
         else :
             app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
-            # Store the text from pdf
-            data[file_name] = text
+        requete = client.chat.stream(
+            model="mistral-large-latest",
+            messages=[
+                {
+                    "role" : "user",
+                    "content" : f"Résumé ce texte : {text}",
+                },
+            ]
+        )
+        chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
+        text = "".join(chunk_list)
+        data[file_name] = text
     # Remove all the files extracted and the images saved
     if clean_files :
         clean(zip_dir)
