@@ -129,7 +129,7 @@ def test_botpress_file():
 
 def test_carcasse(online = False, file_path = None, file_url = None):
     if online :
-        url = "https://pdfwebhook.onrender.com/carcasse"
+        url = "http://vps-fd7f6448.vps.ovh.net:5000/carcasse"
     else : 
         url = "http://127.0.0.1:5000/carcasse"
     if file_path is not None :
@@ -429,7 +429,8 @@ def get_zip(url : str,extract_dir = "zip/") :
 
 def test_zip(zip_url : str, render = False):
     if render :
-        url = "https://pdfwebhook.onrender.com/archive"
+        # url = "https://pdfwebhook.onrender.com/archive"
+        url = "http://vps-fd7f6448.vps.ovh.net:5000/archive"
     else :
         url = "http://127.0.0.1:5000/archive"
     data = {
@@ -442,12 +443,13 @@ def test_zip(zip_url : str, render = False):
     return None
 
 def workflow_zip():   
-    url_zip = "https://files.bpcontent.cloud/2025/12/08/16/20251208161531-7UYRS59O.zip"
-    test_zip(zip_url = url_zip)
+    url_zip = "https://files.bpcontent.cloud/2025/12/09/15/20251209150258-0GFY0XT9.zip"
+    test_zip(zip_url = url_zip,render=True)
 
 def workflow_carcasse():
     file_url = "https://files.bpcontent.cloud/2025/12/09/13/20251209131146-M0H4UGNH.pdf"
-    result = test_carcasse(online=False,file_url=file_url)
+    file_path = "/home/nathan/workspace/pdfWebhook/demande_financement/pdf/ADLI.pdf"
+    result = test_carcasse(online=True,file_url=file_url)
     print (result.text)
 
 if __name__ == "__main__":

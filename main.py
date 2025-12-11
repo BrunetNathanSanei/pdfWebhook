@@ -1,6 +1,4 @@
-import pytesseract
 import numpy as np
-import cv2
 import pdfplumber
 from flask import Flask, request, jsonify
 import logging
@@ -28,35 +26,6 @@ print(api_key)
 client = Mistral(api_key = api_key)
 
 logging.basicConfig(level=logging.INFO)
-
-
-@app.route("/webhook", methods=['POST'])
-def webhook():
-    if "file" not in request.files :
-        return "Aucun fichier PDF reçu", 400
-    
-    file = request.files["file"]
-    extension = file.filename.split('.')[-1]
-    print(f'file extension : {extension}')
-    if extension == 'pdf' :
-        text = ""
-        with pdfplumber.open(file.stream) as pdf :
-            for page in pdf.pages :
-                content = page.extract_text() or ""
-                text += content + "\n"
-        print(f'text : {text}')
-        return text
-    elif extension.lower() in img_extension:
-        file_bytes = np.frombuffer(file.read(), np.uint8)
-
-        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        print(img.shape)
-        img_gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-        #threshold_img = cv2.threshold(img_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        text = pytesseract.image_to_string(img_gray)
-        return text
-    else :
-        return "Aucun fichier PDF reçu", 400
 
 @app.route("/test",methods = ['GET','POST'])
 def test():
@@ -101,6 +70,7 @@ def send_pdf():
 
 @app.route("/carcasse",methods = ['POST'])
 def carcasse():
+    app.logger.info("Requête reçu sur /carcasse")
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
@@ -143,6 +113,7 @@ def pdf2text():
 
 @app.route("/archive", methods = ['POST'])
 def archive():
+    app.logger.info("Requête reçu sur /archive")
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
@@ -168,7 +139,7 @@ def archive():
             continue
         text = extract_pdf(file_path,pdf_dir="",stream=None)
         if text.strip() == "" :
-            
+            print(f"{file_name} envoyé à mistral : {text.strip() == ""}")
             # reader = PdfReader(file_path)
             # page = reader.pages[0]
             # for i, image_file_object in enumerate(page.images):
@@ -192,6 +163,7 @@ def archive():
             full_text = post_processing_mistral(full_text)
             data[file_name] = full_text          
         else :
+            print(f"{file_name} non envoyé : {text.strip() == ""}")
             # Store the text from pdf
             data[file_name] = text
     # Remove all the files extracted and the images saved
