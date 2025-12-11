@@ -139,7 +139,7 @@ def archive():
             continue
         text = extract_pdf(file_path,pdf_dir="",stream=None)
         if text.strip() == "" :
-            print(f"{file_name} envoyé à mistral : {text.strip() == ""}")
+            app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")
             # reader = PdfReader(file_path)
             # page = reader.pages[0]
             # for i, image_file_object in enumerate(page.images):
@@ -163,7 +163,7 @@ def archive():
             full_text = post_processing_mistral(full_text)
             data[file_name] = full_text          
         else :
-            print(f"{file_name} non envoyé : {text.strip() == ""}")
+            app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
             # Store the text from pdf
             data[file_name] = text
     # Remove all the files extracted and the images saved
