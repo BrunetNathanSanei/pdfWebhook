@@ -163,23 +163,27 @@ def archive():
             text = post_processing_mistral(full_text)         
         else :
             app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
-        requete = client.chat.stream(
-            model="mistral-large-latest",
-            messages=[
-                {
-                    "role" : "user",
-                    "content" : f"Résumé ce texte : {text}",
-                },
-            ]
-        )
-        chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
-        text = "".join(chunk_list)
+        
+        app.logger.info(f"{file_name} : {len(text)}")
+        if len(text) > 5000 :
+            requete = client.chat.stream(
+                model="mistral-large-latest",
+                messages=[
+                    {
+                        "role" : "user",
+                        "content" : f"Résumé ce texte : {text}",
+                    },
+                ]
+            )
+            chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
+            text = "".join(chunk_list)
         data[file_name] = text
     # Remove all the files extracted and the images saved
+    app.logger.info("Traitement terminé")
     if clean_files :
         clean(zip_dir)
         clean(image_dir)
-    
+    app.logger.info("Nettoyage terminé")
     return data,200
 
 def create_dir(dir):
