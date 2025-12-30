@@ -442,15 +442,80 @@ def test_zip(zip_url : str, render = False):
     print(r.text)
     return None
 
+def test_get_files_list(online : bool, zip_url : str):
+    if online : 
+        url = "http://vps-fd7f6448.vps.ovh.net:5000/get_file_list"
+    else : 
+        url = "http://127.0.0.1:5000/get_file_list"
+    data = {
+        "file_url" : zip_url
+    }
+    r = requests.post(url=url,data=data)
+    file_list = r.json()
+    return file_list
+
+def test_get_text(file_path,online=False):
+    if online : 
+        url = "http://vps-fd7f6448.vps.ovh.net:5000/get_text"
+    else : 
+        url = "http://127.0.0.1:5000/get_text"
+    data = {
+        "file_path" : file_path
+    }
+    r = requests.post(url = url, data = data)
+    print(r.status_code)
+    print(r.text)
+    return None
+
+def test_delete_file(online = False):
+    if online : 
+        url = "http://vps-fd7f6448.vps.ovh.net:5000/remove_file"
+    else : 
+        url = "http://127.0.0.1:5000/remove_file"
+    r = requests.get(url = url)
+    print(r.status_code)
+    return None   
+
 def workflow_zip():   
-    url_zip = "https://files.bpcontent.cloud/2025/12/09/15/20251209150258-0GFY0XT9.zip"
-    test_zip(zip_url = url_zip,render=True)
+    zip_url = "https://files.bpcontent.cloud/2025/12/29/14/20251229140021-90TBC5V0.zip"
+    online = False
+    file_list = test_get_files_list(online = online, zip_url=zip_url)
+    text_list = []
+    for file in file_list:
+        text = test_get_text(file)
+        text_list.append(text)
+    test_delete_file()
 
 def workflow_carcasse():
     file_url = "https://files.bpcontent.cloud/2025/12/09/13/20251209131146-M0H4UGNH.pdf"
     file_path = "/home/nathan/workspace/pdfWebhook/demande_financement/pdf/ADLI.pdf"
     result = test_carcasse(online=True,file_url=file_url)
-    print (result.text)
+    print(result.text)
+
+def workflow_file_list():
+    zip_url = "https://files.bpcontent.cloud/2025/12/29/14/20251229140021-90TBC5V0.zip"
+    online = False
+    test_get_files_list(online = online, zip_url=zip_url)
+
+def workflow_get_text():
+    file_path = "zip/extract/Partage_MINITAUX_Actelo/3 derniers mois de relev\u00e9 de compte bancaire (tous les comptes)/Releve n 010 du 06-10-2025_CCHQ 85108707173 M GIMENO JEROME.pdf"
+    test_get_text(file_path)
+
+
+def clean(dir : str) :
+    for element in os.listdir(dir):
+        if os.path.isdir(dir+element):
+            element += '/'
+            clean(dir+element)
+            os.rmdir(dir+element)
+            print(f"Folder '{element}' deleted")
+        else :
+            if os.path.exists(dir+element):
+                os.remove(dir+element)
+                print(f"File '{element}' deleted")
+            else :
+                print(f"File '{element}' does not exist")
+    
 
 if __name__ == "__main__":
-    workflow_carcasse()
+    workflow_zip()

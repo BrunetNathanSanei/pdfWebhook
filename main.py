@@ -20,7 +20,8 @@ import mimetypes
 app = Flask(__name__)
 img_extension = {}
 
-PDF_DIR="/zip"
+PDF_DIR="zip/"
+ZIP_DIR ="zip/extract/"
 api_key = os.environ.get("MISTRAL_API_KEY")
 # print(api_key)
 client = Mistral(api_key = api_key)
@@ -121,7 +122,7 @@ def archive():
     # else: 
     #     return "Aucun fichier PDF reçu", 400
     clean_files = True
-    zip_dir = "zip/test/"
+    zip_dir = ZIP_DIR
     image_dir = "image/"
     # Create the dir if does not exist
     create_dir(zip_dir)
@@ -147,8 +148,7 @@ def archive():
             #     image_file_object.image.save(image_name)
             #     text = ocr(image_name)
             #     # Store the text retru nby the ocr
-            #     data[image_name] = text
-            
+            #     data[image_name] = text    
             ocr_response = client.ocr.process(
             model = "mistral-ocr-latest",
             document = {
@@ -185,6 +185,69 @@ def archive():
         clean(image_dir)
     app.logger.info("Nettoyage terminé")
     return data,200
+
+
+@app.route("/get_file_list",methods = ['POST'])
+def get_file_list():
+    app.logger.info("Requête reçu sur /get_file_list")
+    file_url = request.form["file_url"]
+    file = requests.get(file_url)
+    app.logger.info(BytesIO(file.content))
+    zip_dir = ZIP_DIR
+    # Create the dir if does not exist
+    create_dir(zip_dir)
+    # Get the zip and extract it in the folder
+    zip = ZipFile(BytesIO(file.content))
+    zip.extractall(zip_dir)
+    # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
+    list_files = list_files_walk(zip_dir)
+    return jsonify(list_files)
+
+
+@app.route("/remove_file",methods = ['GET'])
+def remove_file():
+    zip_dir = ZIP_DIR
+    clean(zip_dir)
+    app.logger.info("Nettoyage terminé")
+    return jsonify({"status" : "files removed"}),200
+
+@app.route("/get_text", methods = ["POST"])
+def get_text():
+    app.logger.info("Requête reçu sur /get_text")
+    file_path = request.form["file_path"]
+    text = extract_pdf(file_path,pdf_dir="",stream=None)
+    file_name = file_path.split('/')[-1]
+    if text.strip() == "" :
+            app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
+            ocr_response = client.ocr.process(
+            model = "mistral-ocr-latest",
+            document = {
+                "type" : "document_url",
+                "document_url" : upload_pdf(filename=file_path)
+            },
+            include_image_base64=False
+            )
+            full_text = ""
+            pages  = [page.markdown for page in ocr_response.pages]
+            full_text = "\n".join(pages)
+            text = post_processing_mistral(full_text)         
+    else :
+        app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
+    app.logger.info(f"{file_name} : {len(text)}")
+    if len(text) > 5000 :
+        requete = client.chat.stream(
+            model="mistral-large-latest",
+            messages=[
+                {
+                    "role" : "user",
+                    "content" : f"Résumé ce texte : {text}",
+                },
+            ]
+        )
+        chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
+        text = "".join(chunk_list)
+    return text,200
+
 
 def create_dir(dir):
     try:
@@ -425,14 +488,17 @@ def list_files_walk(start_path='.'):
             files_list.append(join(root, file))
     return files_list
 
-def clean(dir : str) -> None:
-    # Ajouter supprimer dossier.
-    for f in list_files_walk(dir):
-        if exists(f) :
-            remove(f)
+def clean(path : str) :
+    for element in os.listdir(path):
+        full_path = os.path.join(path,element)
+        if os.path.isdir(full_path):
+            clean(full_path)
+            os.rmdir(full_path)
+            print(f"Folder '{element}' deleted")
         else :
-            print("File does not exist")
-    return None
+            os.remove(full_path)
+            print(f"File '{element}' deleted")
+
 
 def upload_pdf(filename : str):
     uploaded_pdf = client.files.upload(

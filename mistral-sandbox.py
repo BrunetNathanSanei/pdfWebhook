@@ -9,21 +9,31 @@ MISTRAL_API_KEY = "kDmMno9Tv66m5rxeZnEVYBLPjoZ5ys9F"
 client = Mistral(api_key = MISTRAL_API_KEY)
 
 def main():
-    filename = "image.pdf"
-    ocr_response = client.ocr.process(
-       model = "mistral-ocr-latest",
-       document = {
-          "type" : "document_url",
-          "document_url" : upload_pdf(filename=filename)
-       },
-       include_image_base64=True
-    )
-    full_text = ""
-    for page in ocr_response.pages:
-        text = page.markdown
-        full_text += text
-    text = post_processing_mistral(text)
-    print(text)
+   filename = "CT 2022 2.pdf"
+   ocr_response = client.ocr.process(
+      model = "mistral-ocr-latest",
+      document = {
+         "type" : "document_url",
+         "document_url" : upload_pdf(filename=filename)
+      },
+      include_image_base64=True
+   )
+   full_text = ""
+   pages  = [page.markdown for page in ocr_response.pages]
+   full_text = "\n".join(pages)
+   text = post_processing_mistral(full_text)
+   request = client.chat.stream(
+      model="mistral-large-latest",
+      messages=[
+         {
+            "role" : "user",
+            "content" : f"Résumé ce texte : {text}",
+         },
+      ]
+   )
+   chunk_list = [chunk.data.choices[0].delta.content for chunk in request]
+   text = "".join(chunk_list)
+   print(text)
 
 def post_processing_mistral(text:str):
     pattern_list = pattern_list = [
