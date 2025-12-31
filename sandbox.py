@@ -429,7 +429,6 @@ def get_zip(url : str,extract_dir = "zip/") :
 
 def test_zip(zip_url : str, render = False):
     if render :
-        # url = "https://pdfwebhook.onrender.com/archive"
         url = "http://vps-fd7f6448.vps.ovh.net:5000/archive"
     else :
         url = "http://127.0.0.1:5000/archive"
@@ -444,7 +443,7 @@ def test_zip(zip_url : str, render = False):
 
 def test_get_files_list(online : bool, zip_url : str):
     if online : 
-        url = "http://vps-fd7f6448.vps.ovh.net:5000/get_file_list"
+        url = "http://37.187.39.26:5000/get_file_list"
     else : 
         url = "http://127.0.0.1:5000/get_file_list"
     data = {
@@ -456,7 +455,7 @@ def test_get_files_list(online : bool, zip_url : str):
 
 def test_get_text(file_path,online=False):
     if online : 
-        url = "http://vps-fd7f6448.vps.ovh.net:5000/get_text"
+        url = "http://37.187.39.26:5000/get_text"
     else : 
         url = "http://127.0.0.1:5000/get_text"
     data = {
@@ -469,7 +468,7 @@ def test_get_text(file_path,online=False):
 
 def test_delete_file(online = False):
     if online : 
-        url = "http://vps-fd7f6448.vps.ovh.net:5000/remove_file"
+        url = "http://37.187.39.26:5000/remove_file"
     else : 
         url = "http://127.0.0.1:5000/remove_file"
     r = requests.get(url = url)
@@ -482,9 +481,9 @@ def workflow_zip():
     file_list = test_get_files_list(online = online, zip_url=zip_url)
     text_list = []
     for file in file_list:
-        text = test_get_text(file)
+        text = test_get_text(file,online=online)
         text_list.append(text)
-    test_delete_file()
+    test_delete_file(online=online)
 
 def workflow_carcasse():
     file_url = "https://files.bpcontent.cloud/2025/12/09/13/20251209131146-M0H4UGNH.pdf"
@@ -494,7 +493,7 @@ def workflow_carcasse():
 
 def workflow_file_list():
     zip_url = "https://files.bpcontent.cloud/2025/12/29/14/20251229140021-90TBC5V0.zip"
-    online = False
+    online = True
     test_get_files_list(online = online, zip_url=zip_url)
 
 def workflow_get_text():
@@ -518,4 +517,10 @@ def clean(dir : str) :
     
 
 if __name__ == "__main__":
+    # url = "http://127.0.0.1:5000/test"
+    # response = requests.get(url)
+
+    # print("Status code :", response.status_code)
+    # print("Réponse JSON :", response.json())
     workflow_zip()
+
