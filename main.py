@@ -234,7 +234,7 @@ def get_text():
     else :
         app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
     app.logger.info(f"{file_name} : {len(text)}")
-    if len(text) > 5000 :
+    if len(text) > 3000 :
         requete = client.chat.stream(
             model="mistral-large-latest",
             messages=[

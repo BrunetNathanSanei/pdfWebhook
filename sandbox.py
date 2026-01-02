@@ -129,7 +129,7 @@ def test_botpress_file():
 
 def test_carcasse(online = False, file_path = None, file_url = None):
     if online :
-        url = "http://vps-fd7f6448.vps.ovh.net:5000/carcasse"
+        url = "http://37.187.39.26:5000/carcasse"
     else : 
         url = "http://127.0.0.1:5000/carcasse"
     if file_path is not None :
@@ -486,8 +486,8 @@ def workflow_zip():
     test_delete_file(online=online)
 
 def workflow_carcasse():
-    file_url = "https://files.bpcontent.cloud/2025/12/09/13/20251209131146-M0H4UGNH.pdf"
-    file_path = "/home/nathan/workspace/pdfWebhook/demande_financement/pdf/ADLI.pdf"
+    file_url = "https://files.bpcontent.cloud/2025/12/31/14/20251231143746-BZLKU8A9.pdf"
+    #  file_path = "/home/nathan/workspace/pdfWebhook/demande_financement/pdf/ADLI.pdf"
     result = test_carcasse(online=True,file_url=file_url)
     print(result.text)
 
@@ -522,5 +522,5 @@ if __name__ == "__main__":
 
     # print("Status code :", response.status_code)
     # print("Réponse JSON :", response.json())
-    workflow_zip()
+    workflow_carcasse()
 
