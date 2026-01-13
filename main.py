@@ -35,21 +35,27 @@ def test():
         return jsonify({"status" : "get ok"}),200
     elif request.method == 'POST':
         try :
-            file_url = request.form["file_url"]
-            file = requests.get(file_url)
-            text = ""
-            with pdfplumber.open(BytesIO(file.content)) as pdf:
-                for page in pdf.pages:
-                    text += page.extract_text()
-            text = clean_text(text)
-            app.logger.info(text)
-            return text
+            convId = request.form["convId"]
+            webhook_url = 'https://webhook.botpress.cloud/62f1753b-b8cd-4403-a3b9-908fd6915d8f'
+            data = {
+                "example": "example",
+                "convId" : convId
+            }
+            headers = {
+                'Content-Type': 'application/json',
+            }
+            response = requests.post(webhook_url, data=json.dumps(data), headers=headers)
+            return jsonify({"status" : "response send on webhook"}),200
         except : 
             app.logger.info("No url found")
             return jsonify({'No url found'}),400
     else :
         print("pas de méthode, ok")
         return jsonify({"status" : "no methods ok"}),200
+
+
+
+
 
 
 @app.route("/send_pdf",methods = ['POST'])
@@ -201,6 +207,8 @@ def get_file_list():
     zip.extractall(zip_dir)
     # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
     list_files = list_files_walk(zip_dir)
+    nb_files = len(list_files)
+
     return jsonify(list_files)
 
 

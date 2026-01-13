@@ -16,7 +16,7 @@ const fileList = response.data
 console.log(fileList)
 //workflow.extractedText = console.log(file_url)
 
-const textList = []
+const textList = workflow.extractedText
 const url_get_text = 'http://37.187.39.26:5000/get_text'
 
 for (const file of fileList) {
@@ -26,7 +26,11 @@ for (const file of fileList) {
   textList.push(text.data)
 }
 
+await axios.get('http://37.187.39.26:5000/remove_file')
+
 workflow.extractedText = textList
+
+
 
 async function testDeleteFile() {
   const url = 'http://37.187.39.26:5000/remove_file'
