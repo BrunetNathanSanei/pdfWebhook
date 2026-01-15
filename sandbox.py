@@ -501,6 +501,21 @@ def workflow_get_text():
     test_get_text(file_path)
 
 
+def workflow_archive():
+    zipUrl = "https://files.bpcontent.cloud/2026/01/14/14/20260114144121-3EXLICZQ.zip"
+    convId = "convo-1"
+    online = False
+    if online : 
+        url = "http://37.187.39.26:5000/archive"
+    else : 
+        url = "http://127.0.0.1:5000/archive"
+    data = {
+        "file_url" : zipUrl,
+        "convId" : convId
+    }
+    r = requests.post(url=url,data=data)
+    print(r.text)
+
 def clean(dir : str) :
     for element in os.listdir(dir):
         if os.path.isdir(dir+element):
@@ -522,5 +537,5 @@ if __name__ == "__main__":
 
     # print("Status code :", response.status_code)
     # print("Réponse JSON :", response.json())
-    workflow_carcasse()
+    workflow_archive()
 

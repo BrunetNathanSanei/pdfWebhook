@@ -16,6 +16,7 @@ import datauri
 import os
 import base64
 import mimetypes
+import threading
 
 app = Flask(__name__)
 img_extension = {}
@@ -36,7 +37,7 @@ def test():
     elif request.method == 'POST':
         try :
             convId = request.form["convId"]
-            webhook_url = 'https://webhook.botpress.cloud/62f1753b-b8cd-4403-a3b9-908fd6915d8f'
+            webhook_url = 'https://webhook.botpress.cloud/71137732-2ecf-48c1-b7e6-4484236e0433'
             data = {
                 "example": "example",
                 "convId" : convId
@@ -120,41 +121,50 @@ def pdf2text():
 
 @app.route("/archive", methods = ['POST'])
 def archive():
+    
     app.logger.info("Requête reçu sur /archive")
-    # if len(request.form) > 0:
     file_url = request.form["file_url"]
+    convId = request.form["convId"]
+    thread = threading.Thread(target = process, args=(convId,file_url),daemon=True)
+    thread.start()
+    response = jsonify({"status": "accepted"})
+    response.status_code = 200
+    return response 
+
+def process(convId,file_url):
     file = requests.get(file_url)
     app.logger.info(BytesIO(file.content))
-    # else: 
-    #     return "Aucun fichier PDF reçu", 400
-    clean_files = True
     zip_dir = ZIP_DIR
-    image_dir = "image/"
     # Create the dir if does not exist
     create_dir(zip_dir)
-    create_dir(image_dir)
     # Get the zip and extract it in the folder
     zip = ZipFile(BytesIO(file.content))
     zip.extractall(zip_dir)
-    data = {}
     # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
     list_files = list_files_walk(zip_dir)
-    for file_path in list_files:
-        file_name = file_path.split('/')[-1]
-        app.logger.info(file_name)
-        if file_path[-3:] != 'pdf':
-            continue
-        text = extract_pdf(file_path,pdf_dir="",stream=None)
-        if text.strip() == "" :
-            app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")
-            # reader = PdfReader(file_path)
-            # page = reader.pages[0]
-            # for i, image_file_object in enumerate(page.images):
-            #     image_name = f"{image_dir}{file_name.split('.')[0]}-{str(i)}-{image_file_object.name}" # image dir, name of the pdf the image is from, number of the image
-            #     image_file_object.image.save(image_name)
-            #     text = ocr(image_name)
-            #     # Store the text retru nby the ocr
-            #     data[image_name] = text    
+    text_list = []
+    for file in list_files:
+
+        text = get_text(file)
+        text_list.append(text)
+    clean(zip_dir)
+    logging.info("Nettoyage terminé")
+    webhook_url = 'https://webhook.botpress.cloud/71137732-2ecf-48c1-b7e6-4484236e0433'
+    data = {
+        "convId" : convId,
+        "text_list" : text_list
+    }
+    headers = {
+        'Content-Type': 'application/json',
+    }
+    requests.post(webhook_url, data=json.dumps(data), headers=headers)
+    logging.info("Webhook contacté")
+
+def get_text(file_path):
+    text = extract_pdf(file_path,pdf_dir="",stream=None)
+    file_name = file_path.split('/')[-1]
+    if text.strip() == "" :
+            app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
             ocr_response = client.ocr.process(
             model = "mistral-ocr-latest",
             document = {
@@ -167,30 +177,22 @@ def archive():
             pages  = [page.markdown for page in ocr_response.pages]
             full_text = "\n".join(pages)
             text = post_processing_mistral(full_text)         
-        else :
-            app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
-        
-        app.logger.info(f"{file_name} : {len(text)}")
-        if len(text) > 5000 :
-            requete = client.chat.stream(
-                model="mistral-large-latest",
-                messages=[
-                    {
-                        "role" : "user",
-                        "content" : f"Résumé ce texte : {text}",
-                    },
-                ]
-            )
-            chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
-            text = "".join(chunk_list)
-        data[file_name] = text
-    # Remove all the files extracted and the images saved
-    app.logger.info("Traitement terminé")
-    if clean_files :
-        clean(zip_dir)
-        clean(image_dir)
-    app.logger.info("Nettoyage terminé")
-    return data,200
+    else :
+        logging.info(f"{file_name} non envoyé : {text.strip() == ""}")
+    logging.info(f"{file_name} : {len(text)}")
+    if len(text) > 10000 :
+        requete = client.chat.stream(
+            model="mistral-large-latest",
+            messages=[
+                {
+                    "role" : "user",
+                    "content" : f"Résumé ce texte : {text}",
+                },
+            ]
+        )
+        chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
+        text = "".join(chunk_list)
+    return text
 
 
 @app.route("/get_file_list",methods = ['POST'])
@@ -219,42 +221,42 @@ def remove_file():
     app.logger.info("Nettoyage terminé")
     return jsonify({"status" : "files removed"}),200
 
-@app.route("/get_text", methods = ["POST"])
-def get_text():
-    app.logger.info("Requête reçu sur /get_text")
-    file_path = request.form["file_path"]
-    text = extract_pdf(file_path,pdf_dir="",stream=None)
-    file_name = file_path.split('/')[-1]
-    if text.strip() == "" :
-            app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
-            ocr_response = client.ocr.process(
-            model = "mistral-ocr-latest",
-            document = {
-                "type" : "document_url",
-                "document_url" : upload_pdf(filename=file_path)
-            },
-            include_image_base64=False
-            )
-            full_text = ""
-            pages  = [page.markdown for page in ocr_response.pages]
-            full_text = "\n".join(pages)
-            text = post_processing_mistral(full_text)         
-    else :
-        app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
-    app.logger.info(f"{file_name} : {len(text)}")
-    if len(text) > 3000 :
-        requete = client.chat.stream(
-            model="mistral-large-latest",
-            messages=[
-                {
-                    "role" : "user",
-                    "content" : f"Résumé ce texte : {text}",
-                },
-            ]
-        )
-        chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
-        text = "".join(chunk_list)
-    return text,200
+# @app.route("/get_text", methods = ["POST"])
+# def get_text():
+#     app.logger.info("Requête reçu sur /get_text")
+#     file_path = request.form["file_path"]
+#     text = extract_pdf(file_path,pdf_dir="",stream=None)
+#     file_name = file_path.split('/')[-1]
+#     if text.strip() == "" :
+#             app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
+#             ocr_response = client.ocr.process(
+#             model = "mistral-ocr-latest",
+#             document = {
+#                 "type" : "document_url",
+#                 "document_url" : upload_pdf(filename=file_path)
+#             },
+#             include_image_base64=False
+#             )
+#             full_text = ""
+#             pages  = [page.markdown for page in ocr_response.pages]
+#             full_text = "\n".join(pages)
+#             text = post_processing_mistral(full_text)         
+#     else :
+#         app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
+#     app.logger.info(f"{file_name} : {len(text)}")
+#     if len(text) > 3000 :
+#         requete = client.chat.stream(
+#             model="mistral-large-latest",
+#             messages=[
+#                 {
+#                     "role" : "user",
+#                     "content" : f"Résumé ce texte : {text}",
+#                 },
+#             ]
+#         )
+#         chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
+#         text = "".join(chunk_list)
+#     return text,200
 
 
 def create_dir(dir):
