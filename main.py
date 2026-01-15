@@ -37,10 +37,12 @@ def test():
     elif request.method == 'POST':
         try :
             convId = request.form["convId"]
+            userId = request.form["userId"]
             webhook_url = 'https://webhook.botpress.cloud/62f1753b-b8cd-4403-a3b9-908fd6915d8f'
             data = {
                 "example": "example",
-                "convId" : convId
+                "convId" : convId,
+                "userId" : userId
             }
             headers = {
                 'Content-Type': 'application/json',
