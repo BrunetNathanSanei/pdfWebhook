@@ -125,13 +125,14 @@ def archive():
     app.logger.info("Requête reçu sur /archive")
     file_url = request.form["file_url"]
     convId = request.form["convId"]
-    thread = threading.Thread(target = process, args=(convId,file_url),daemon=True)
+    userId = request.form["userId"]
+    thread = threading.Thread(target = process, args=(convId,userId,file_url),daemon=True)
     thread.start()
     response = jsonify({"status": "accepted"})
     response.status_code = 200
     return response 
 
-def process(convId,file_url):
+def process(convId,userId,file_url):
     file = requests.get(file_url)
     app.logger.info(BytesIO(file.content))
     zip_dir = ZIP_DIR
@@ -152,6 +153,7 @@ def process(convId,file_url):
     webhook_url = 'https://webhook.botpress.cloud/71137732-2ecf-48c1-b7e6-4484236e0433'
     data = {
         "convId" : convId,
+        "userId" : userId,
         "text_list" : text_list
     }
     headers = {
