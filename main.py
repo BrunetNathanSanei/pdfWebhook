@@ -37,7 +37,7 @@ def test():
     elif request.method == 'POST':
         try :
             convId = request.form["convId"]
-            webhook_url = 'https://webhook.botpress.cloud/71137732-2ecf-48c1-b7e6-4484236e0433'
+            webhook_url = 'https://webhook.botpress.cloud/62f1753b-b8cd-4403-a3b9-908fd6915d8f'
             data = {
                 "example": "example",
                 "convId" : convId
