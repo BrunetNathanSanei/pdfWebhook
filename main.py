@@ -24,7 +24,6 @@ img_extension = {}
 PDF_DIR="zip/"
 ZIP_DIR ="zip/extract/"
 api_key = os.environ.get("MISTRAL_API_KEY")
-# print(api_key)
 client = Mistral(api_key = api_key)
 
 logging.basicConfig(level=logging.INFO)
@@ -134,7 +133,10 @@ def archive():
     response.status_code = 200
     return response 
 
-def process(convId,userId,file_url):
+@app.route("/send_archive", methods = ["POST"])
+def send_archive():
+    app.logger.info("Requête reçu sur /send_archive")
+    file_url = request.form["file_url"]
     file = requests.get(file_url)
     app.logger.info(BytesIO(file.content))
     zip_dir = ZIP_DIR
@@ -143,6 +145,23 @@ def process(convId,userId,file_url):
     # Get the zip and extract it in the folder
     zip = ZipFile(BytesIO(file.content))
     zip.extractall(zip_dir)
+    response = jsonify({"status": "accepted"})
+    response.status_code = 200
+    return response 
+
+@app.route("/analyse",methods = ["POST"])
+def analyse():
+    app.logger.info("Requête reçu sur /archive")
+    convId = request.form["convId"]
+    userId = request.form["userId"]
+    thread = threading.Thread(target = process, args=(convId,userId),daemon=True)
+    thread.start()
+    response = jsonify({"status": "accepted"})
+    response.status_code = 200
+    return response 
+
+def process(convId,userId):
+    zip_dir = ZIP_DIR
     # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
     list_files = list_files_walk(zip_dir)
     text_list = []
@@ -184,7 +203,7 @@ def get_text(file_path):
     else :
         logging.info(f"{file_name} non envoyé : {text.strip() == ""}")
     logging.info(f"{file_name} : {len(text)}")
-    if len(text) > 10000 :
+    if len(text) > 3500 :
         requete = client.chat.stream(
             model="mistral-large-latest",
             messages=[
