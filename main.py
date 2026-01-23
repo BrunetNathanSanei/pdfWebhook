@@ -160,8 +160,16 @@ def analyse():
     response.status_code = 200
     return response 
 
-def process(convId,userId):
+def process(convId,userId,file_url):
+    file_url = request.form["file_url"]
+    file = requests.get(file_url)
+    app.logger.info(BytesIO(file.content))
     zip_dir = ZIP_DIR
+    # Create the dir if does not exist
+    create_dir(zip_dir)
+    # Get the zip and extract it in the folder
+    zip = ZipFile(BytesIO(file.content))
+    zip.extractall(zip_dir)
     # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
     list_files = list_files_walk(zip_dir)
     text_list = []

@@ -502,7 +502,7 @@ def workflow_get_text():
 
 
 def workflow_archive():
-    zipUrl = "https://files.bpcontent.cloud/2026/01/15/09/20260115095809-KTIV2ZSJ.zip"
+    zipUrl = "https://files.bpcontent.cloud/2026/01/23/09/20260123093014-YIBY7V9Z.zip"
     convId = "convo-1"
     online = False
     if online : 
