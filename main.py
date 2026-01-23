@@ -161,7 +161,6 @@ def analyse():
     return response 
 
 def process(convId,userId,file_url):
-    file_url = request.form["file_url"]
     file = requests.get(file_url)
     app.logger.info(BytesIO(file.content))
     zip_dir = ZIP_DIR
