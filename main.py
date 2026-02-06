@@ -510,7 +510,10 @@ def get_borrowers(text:str)->list[str]:
 
 def get_loan(text_parts:dict)->tuple:
     loan = text_parts[" Détails des prêts"].lower() # Garde que ce qui est après Prêt principal amortissable de la section Détails des prêts
-    loan = loan.split("prêt principal amortissable")[1]
+    if "prêt principal amortissable" in loan :
+        loan = loan.split("prêt principal amortissable")[1]
+    elif "principal amortissable" in loan :
+        loan = loan.split("principal amortissable")[1]
     loan = loan.split("%")[0]+'%' # Enlève les données qui sont après le premier % (le taux)
     total = loan.split("€")[0].replace("prêt principal amortissable","").strip() # Recupère le total du prêt (ce qui est avant le €)
     taux = re.search("[0-9,]+ %",loan)[0] # Recupère le taux (juste avant le % )

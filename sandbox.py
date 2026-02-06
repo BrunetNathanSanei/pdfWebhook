@@ -486,9 +486,10 @@ def workflow_zip():
     test_delete_file(online=online)
 
 def workflow_carcasse():
-    file_url = "https://files.bpcontent.cloud/2025/12/31/14/20251231143746-BZLKU8A9.pdf"
+    # file_url = "https://files.bpcontent.cloud/2026/01/28/08/20260128084941-5ETHG4DL.pdf"
+    file_url = "https://files.bpcontent.cloud/2026/01/28/06/20260128065232-KJKOCRBL.pdf"
     #  file_path = "/home/nathan/workspace/pdfWebhook/demande_financement/pdf/ADLI.pdf"
-    result = test_carcasse(online=True,file_url=file_url)
+    result = test_carcasse(online=False,file_url=file_url)
     print(result.text)
 
 def workflow_file_list():
@@ -537,5 +538,5 @@ if __name__ == "__main__":
 
     # print("Status code :", response.status_code)
     # print("Réponse JSON :", response.json())
-    workflow_archive()
+    workflow_carcasse()
 
