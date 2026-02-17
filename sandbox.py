@@ -129,7 +129,7 @@ def test_botpress_file():
 
 def test_carcasse(online = False, file_path = None, file_url = None):
     if online :
-        url = "http://37.187.39.26:5000/carcasse"
+        url = "http://51.83.32.142:5000/carcasse"
     else : 
         url = "http://127.0.0.1:5000/carcasse"
     if file_path is not None :
@@ -487,7 +487,7 @@ def workflow_zip():
 
 def workflow_carcasse():
     # file_url = "https://files.bpcontent.cloud/2026/01/28/08/20260128084941-5ETHG4DL.pdf"
-    file_url = "https://files.bpcontent.cloud/2026/01/28/06/20260128065232-KJKOCRBL.pdf"
+    file_url = "https://files.bpcontent.cloud/2026/02/17/13/20260217135149-04UJFCWQ.pdf"
     #  file_path = "/home/nathan/workspace/pdfWebhook/demande_financement/pdf/ADLI.pdf"
     result = test_carcasse(online=False,file_url=file_url)
     print(result.text)
@@ -503,16 +503,17 @@ def workflow_get_text():
 
 
 def workflow_archive():
-    zipUrl = "https://files.bpcontent.cloud/2026/01/23/09/20260123093014-YIBY7V9Z.zip"
+    zipUrl = "https://files.bpcontent.cloud/2026/02/17/12/20260217122532-IXIJHGK3.zip"
     convId = "convo-1"
     online = False
     if online : 
-        url = "http://37.187.39.26:5000/archive"
+        url = "http://51.83.32.142:5000/archive"
     else : 
         url = "http://127.0.0.1:5000/archive"
     data = {
         "file_url" : zipUrl,
-        "convId" : convId
+        "convId" : convId,
+        "userId" : "1000" 
     }
     r = requests.post(url=url,data=data)
     print(r.text)
@@ -538,5 +539,7 @@ if __name__ == "__main__":
 
     # print("Status code :", response.status_code)
     # print("Réponse JSON :", response.json())
+
     workflow_carcasse()
+    workflow_archive()
 

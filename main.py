@@ -12,10 +12,7 @@ from PyPDF2 import PdfReader
 from os import listdir, remove,walk,mkdir
 from os.path import isfile, join, exists
 from mistralai import Mistral
-import datauri
 import os
-import base64
-import mimetypes
 import threading
 
 app = Flask(__name__)
@@ -55,27 +52,6 @@ def test():
         print("pas de méthode, ok")
         return jsonify({"status" : "no methods ok"}),200
 
-
-
-
-
-
-@app.route("/send_pdf",methods = ['POST'])
-def send_pdf():
-    if "file" not in request.files :
-        return "Aucun fichier PDF reçu", 400
-    file = request.files["file"]
-    extension = file.filename.split('.')[-1]
-    print(f'file extension : {extension}')
-    if extension == 'pdf' :
-        text = ""
-        with pdfplumber.open(file.stream) as pdf :
-            for page in pdf.pages :
-                text += page.extract_text() + "\n"
-        return text
-        
-    else :
-        return "Aucun fichier PDF reçu", 400
 
 @app.route("/carcasse",methods = ['POST'])
 def carcasse():
@@ -225,69 +201,12 @@ def get_text(file_path):
     return text
 
 
-@app.route("/get_file_list",methods = ['POST'])
-def get_file_list():
-    app.logger.info("Requête reçu sur /get_file_list")
-    file_url = request.form["file_url"]
-    file = requests.get(file_url)
-    app.logger.info(BytesIO(file.content))
-    zip_dir = ZIP_DIR
-    # Create the dir if does not exist
-    create_dir(zip_dir)
-    # Get the zip and extract it in the folder
-    zip = ZipFile(BytesIO(file.content))
-    zip.extractall(zip_dir)
-    # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
-    list_files = list_files_walk(zip_dir)
-    nb_files = len(list_files)
-
-    return jsonify(list_files)
-
-
 @app.route("/remove_file",methods = ['GET'])
 def remove_file():
     zip_dir = ZIP_DIR
     clean(zip_dir)
     app.logger.info("Nettoyage terminé")
     return jsonify({"status" : "files removed"}),200
-
-# @app.route("/get_text", methods = ["POST"])
-# def get_text():
-#     app.logger.info("Requête reçu sur /get_text")
-#     file_path = request.form["file_path"]
-#     text = extract_pdf(file_path,pdf_dir="",stream=None)
-#     file_name = file_path.split('/')[-1]
-#     if text.strip() == "" :
-#             app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
-#             ocr_response = client.ocr.process(
-#             model = "mistral-ocr-latest",
-#             document = {
-#                 "type" : "document_url",
-#                 "document_url" : upload_pdf(filename=file_path)
-#             },
-#             include_image_base64=False
-#             )
-#             full_text = ""
-#             pages  = [page.markdown for page in ocr_response.pages]
-#             full_text = "\n".join(pages)
-#             text = post_processing_mistral(full_text)         
-#     else :
-#         app.logger.info(f"{file_name} non envoyé : {text.strip() == ""}")
-#     app.logger.info(f"{file_name} : {len(text)}")
-#     if len(text) > 3000 :
-#         requete = client.chat.stream(
-#             model="mistral-large-latest",
-#             messages=[
-#                 {
-#                     "role" : "user",
-#                     "content" : f"Résumé ce texte : {text}",
-#                 },
-#             ]
-#         )
-#         chunk_list = [chunk.data.choices[0].delta.content for chunk in requete]
-#         text = "".join(chunk_list)
-#     return text,200
-
 
 def create_dir(dir):
     try:
