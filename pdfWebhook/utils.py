@@ -230,6 +230,9 @@ def clean(path : str) :
             remove(full_path)
             print(f"File '{element}' deleted")
 
+def remove_dir(path:str):
+    rmdir(path)
+
 def upload_pdf(filename : str,client):
     uploaded_pdf = client.files.upload(
        file = {

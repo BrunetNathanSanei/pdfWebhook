@@ -15,3 +15,9 @@ mistral-sandbox.py
 key.txt
 *.zip
 logs.txt
+data/*
+botpresslink.txt
+019HexaSmal.csv
+*.js
+*.jpg
+files/*

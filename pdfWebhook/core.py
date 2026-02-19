@@ -3,8 +3,8 @@ import requests
 import json
 import logging
 from zipfile import ZipFile
-from .config import ZIP_DIR
-from .utils import create_dir, list_files_walk,clean,extract_pdf,upload_pdf,post_processing_mistral
+from .config import ZIP_DIR,WEBHOOK_URL,MISTRAL_LLM_MODEL,MISTRAL_OCR_MODEL
+from .utils import create_dir, list_files_walk,clean,extract_pdf,upload_pdf,post_processing_mistral,remove_dir
 
 def process(convId,userId,file_url,app,client):
     file = requests.get(file_url)
@@ -23,8 +23,8 @@ def process(convId,userId,file_url,app,client):
         text = get_text(file,app,client)
         text_list.append(text)
     clean(zip_dir)
+    remove_dir(zip_dir)
     logging.info("Nettoyage terminé")
-    webhook_url = 'https://webhook.botpress.cloud/71137732-2ecf-48c1-b7e6-4484236e0433'
     data = {
         "convId" : convId,
         "userId" : userId,
@@ -33,7 +33,7 @@ def process(convId,userId,file_url,app,client):
     headers = {
         'Content-Type': 'application/json',
     }
-    requests.post(webhook_url, data=json.dumps(data), headers=headers)
+    requests.post(WEBHOOK_URL, data=json.dumps(data), headers=headers)
     logging.info("Webhook contacté")
 
 def get_text(file_path,app,client):
@@ -42,7 +42,7 @@ def get_text(file_path,app,client):
     if text.strip() == "" :
             app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
             ocr_response = client.ocr.process(
-            model = "mistral-ocr-latest",
+            model = MISTRAL_OCR_MODEL,
             document = {
                 "type" : "document_url",
                 "document_url" : upload_pdf(filename=file_path,client=client)
@@ -58,7 +58,7 @@ def get_text(file_path,app,client):
     logging.info(f"{file_name} : {len(text)}")
     if len(text) > 3500 :
         requete = client.chat.stream(
-            model="mistral-large-latest",
+            model=MISTRAL_LLM_MODEL,
             messages=[
                 {
                     "role" : "user",
