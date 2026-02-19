@@ -8,7 +8,7 @@ from .utils import create_dir, list_files_walk,clean,extract_pdf,upload_pdf,post
 
 def process(convId,userId,file_url,app,client):
     file = requests.get(file_url)
-    app.logger.info(BytesIO(file.content))
+    print(BytesIO(file.content))
     zip_dir = ZIP_DIR+convId+'/'
     # Create the dir if does not exist
     create_dir(zip_dir)
@@ -40,7 +40,7 @@ def get_text(file_path,app,client):
     text = extract_pdf(file_path,pdf_dir="",stream=None)
     file_name = file_path.split('/')[-1]
     if text.strip() == "" :
-            app.logger.info(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
+            print(f"{file_name} envoyé à mistral : {text.strip() == ""}")    
             ocr_response = client.ocr.process(
             model = MISTRAL_OCR_MODEL,
             document = {
