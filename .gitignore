@@ -13,3 +13,5 @@ image/
 *.jpg
 mistral-sandbox.py
 key.txt
+*.zip
+logs.txt
