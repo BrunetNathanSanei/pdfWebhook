@@ -20,7 +20,7 @@ def process(convId,userId,file_url,app,client):
     text_list = []
     for file in list_files:
 
-        text = get_text(file,app,client)
+        text = get_text(file,client)
         text_list.append(text)
     clean(zip_dir)
     remove_dir(zip_dir)
@@ -36,7 +36,7 @@ def process(convId,userId,file_url,app,client):
     requests.post(WEBHOOK_URL, data=json.dumps(data), headers=headers)
     logging.info("Webhook contacté")
 
-def get_text(file_path,app,client):
+def get_text(file_path,client):
     text = extract_pdf(file_path,pdf_dir="",stream=None)
     file_name = file_path.split('/')[-1]
     if text.strip() == "" :

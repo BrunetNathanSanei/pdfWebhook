@@ -12,6 +12,8 @@ import numpy as np
 import io
 from zipfile import ZipFile
 
+from pdfWebhook import get_text
+
 
 PDF_DIR = "demande_financement/pdf/"
 RESULT_DIR = "demande_financement/results/"
@@ -534,12 +536,13 @@ def clean(dir : str) :
     
 
 if __name__ == "__main__":
-    # url = "http://127.0.0.1:5000/test"
-    # response = requests.get(url)
-
-    # print("Status code :", response.status_code)
-    # print("Réponse JSON :", response.json())
-
+    from mistralai import Mistral
+    from pdfWebhook import API_KEY
+    
+    client = Mistral(api_key = API_KEY)
+    
+    pdf_path = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_tXxugW9C8sTJvyJpE (1)/Sous Seing Privé ou Compromis de Vente/Offre d'achat signé - Maison Pomérols M.Pauls.pdf"
+    get_text(pdf_path, client=client)
     workflow_carcasse()
     workflow_archive()
 

@@ -6,7 +6,7 @@ import threading
 from mistralai import Mistral
 from zipfile import ZipFile
 from .utils import split_text, clean,preprocessing,create_dir, extract_pdf,get_borrowers,create_delimiters_list,text_without_com,get_informations,get_loan
-from .core import process
+from .core import process,get_text
 from .config import ZIP_DIR,API_KEY
 
 courtia = Blueprint('courtia',__name__)
@@ -74,9 +74,8 @@ def pdf2text():
     extension = file.filename.split('.')[-1]
     print(f'file extension : {extension}')
     if extension == 'pdf' :
-        text = extract_pdf(file.stream)
+        text = get_text(file,client=client)
         return text
-        
     else :
         return "Aucun fichier PDF reçu", 400 
 
