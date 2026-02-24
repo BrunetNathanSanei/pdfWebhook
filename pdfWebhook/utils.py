@@ -65,11 +65,14 @@ def create_dir(dir):
 def extract_pdf(file_name : str,stream = None,pdf_dir = ZIP_DIR,first_page=False):
     text = ""
     if stream is not None :
-        with pdfplumber.open(stream) as pdf :
-            pages = [page.extract_text() for page in pdf.pages]
-            if first_page :
-                return "\n".join(pages),pages[0]
-            text = "\n".join(pages)
+        try :
+            with pdfplumber.open(stream) as pdf :
+                pages = [page.extract_text() for page in pdf.pages]
+                if first_page :
+                    return "\n".join(pages),pages[0]
+                text = "\n".join(pages)
+        except :
+            return None
     else :
         with pdfplumber.open(("").join([pdf_dir,file_name])) as pdf :
             pages = [page.extract_text() for page in pdf.pages]

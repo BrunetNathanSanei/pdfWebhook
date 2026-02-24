@@ -46,9 +46,10 @@ def carcasse():
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
-        if not is_pdf(file):
+        try :
+            text,first_page = extract_pdf(file_name=None, stream=BytesIO(file.content),first_page=True)
+        except :
             return {"error": "invalid_pdf"}, 400
-        text,first_page = extract_pdf(file_name=None, stream=BytesIO(file.content),first_page=True)
     elif "file" in request.files :
         file = request.files["file"]
         text,first_page = extract_pdf(file_name=None,stream=file.stream,first_page=True)
