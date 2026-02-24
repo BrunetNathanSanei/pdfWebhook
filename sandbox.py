@@ -6,13 +6,19 @@ from PyPDF2 import PdfReader
 import re
 import os
 from os import listdir, remove
-from os.path import isfile, join
+from os.path import isfile, join, getsize
 import pandas as pd
 import numpy as np
 import io
 from zipfile import ZipFile
 
-from pdfWebhook import get_text
+from mistralai import Mistral
+from pdfWebhook import API_KEY
+import mimetypes
+
+from pdfWebhook.utils import list_files_walk
+
+from pdfWebhook import get_text, process
 
 
 PDF_DIR = "demande_financement/pdf/"
@@ -505,8 +511,8 @@ def workflow_get_text():
 
 
 def workflow_archive():
-    zipUrl = "https://files.bpcontent.cloud/2026/02/17/12/20260217122532-IXIJHGK3.zip"
-    convId = "convo-1"
+    zipUrl = "https://files.bpcontent.cloud/2026/02/23/16/20260223161217-17MQOK1I.zip"
+    convId = "convo-Goek"
     online = False
     if online : 
         url = "http://51.83.32.142:5000/archive"
@@ -533,16 +539,47 @@ def clean(dir : str) :
                 print(f"File '{element}' deleted")
             else :
                 print(f"File '{element}' does not exist")
+
+def workflow_process():
+    print(API_KEY)
+    client = Mistral(api_key = API_KEY)
+    convId,userId = 'convId1002','100'
+
+    zip_url = 'https://files.bpcontent.cloud/2026/02/23/15/20260223152933-2V4YJSFQ.zip'
+
+    process(convId=convId,userId=userId,zip_url=zip_url,client=client)
+
+def workflow_get_text():
+    dir_path = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_6BX3zCcTPiyJjzN2N (2)"
+    print(API_KEY)
+    client = Mistral(api_key = API_KEY)
+    file_list = list_files_walk(dir_path)
+    for file in file_list :
+        file_name = file.split('/')[-1]
+        print(file_name)
+        print(f"longeur : {len(get_text(file,client=client))}")
+if __name__ == "__main__":
+
+
+    
+    workflow_archive()
+    # path_file = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_tXxugW9C8sTJvyJpE/3 derniers mois de relevé de compte bancaire (tous les comptes)/Relevé compte joint 251109.pdf"
+
+    # print(mimetypes.guess_type(path_file))
+    
+    # def is_pdf(path):
+    #     with open(path, "rb") as f:
+    #         return f.read(4) == b"%PDF"
+
+    # print(is_pdf(path_file))
+    # dir_path = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_tXxugW9C8sTJvyJpE/"
+
+    # file_list = list_files_walk(dir_path)
     
 
-if __name__ == "__main__":
-    from mistralai import Mistral
-    from pdfWebhook import API_KEY
-    
-    client = Mistral(api_key = API_KEY)
-    
-    pdf_path = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_tXxugW9C8sTJvyJpE (1)/Sous Seing Privé ou Compromis de Vente/Offre d'achat signé - Maison Pomérols M.Pauls.pdf"
-    get_text(pdf_path, client=client)
-    workflow_carcasse()
-    workflow_archive()
+
+    # text = get_text(pdf_path, client=client)
+    # print(text)
+    # workflow_carcasse()
+    # workflow_archive()
 

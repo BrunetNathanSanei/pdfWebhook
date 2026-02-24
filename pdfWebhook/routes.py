@@ -5,7 +5,7 @@ import json
 import threading
 from mistralai import Mistral
 from zipfile import ZipFile
-from .utils import split_text, clean,preprocessing,create_dir, extract_pdf,get_borrowers,create_delimiters_list,text_without_com,get_informations,get_loan
+from .utils import split_text, clean,preprocessing,create_dir, extract_pdf,get_borrowers,create_delimiters_list,text_without_com,get_informations,get_loan, is_pdf
 from .core import process,get_text
 from .config import ZIP_DIR,API_KEY
 
@@ -46,6 +46,8 @@ def carcasse():
     if len(request.form) > 0:
         file_url = request.form["file_url"]
         file = requests.get(file_url)
+        if not is_pdf(file):
+            return {"error": "invalid_pdf"}, 400
         text = extract_pdf(file_name=None, stream=BytesIO(file.content))
     elif "file" in request.files :
         file = request.files["file"]
@@ -66,18 +68,7 @@ def carcasse():
     # app.logger.info(data)
     return data
 
-@courtia.route("/pdf2text", methods = ['POST'])
-def pdf2text():
-    if "file" not in request.files :
-        return "Aucun fichier PDF reçu", 400
-    file = request.files["file"]
-    extension = file.filename.split('.')[-1]
-    print(f'file extension : {extension}')
-    if extension == 'pdf' :
-        text = get_text(file,client=client)
-        return text
-    else :
-        return "Aucun fichier PDF reçu", 400 
+
 
 @courtia.route("/archive", methods = ['POST'])
 def archive():
@@ -86,7 +77,7 @@ def archive():
     file_url = request.form["file_url"]
     convId = request.form["convId"]
     userId = request.form["userId"]
-    thread = threading.Thread(target = process, args=(convId,userId,file_url,current_app,client),daemon=True)
+    thread = threading.Thread(target = process, args=(convId,userId,file_url,client),daemon=True)
     thread.start()
     response = jsonify({"status": "accepted"})
     response.status_code = 200

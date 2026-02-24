@@ -253,3 +253,7 @@ def post_processing_mistral(text:str):
        text = re.sub(pattern,"",text)
        text = text.strip()
     return text
+
+def is_pdf(path):
+    with open(path, "rb") as f:
+        return f.read(4) == b"%PDF"
