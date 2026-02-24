@@ -176,11 +176,20 @@ def preprocessing(text:str)->str:
         text = re.sub(pattern,"",text)
     return text
 
-def extract_pdf(file_name:str,pdf_dir = PDF_DIR):
+def extract_pdf(file_path : str,stream = None,pdf_dir = None,first_page=False):
     text = ""
-    with pdfplumber.open(("").join([pdf_dir,file_name])) as pdf :
-        for page in pdf.pages :
-            text += page.extract_text() + "\n"
+    if stream is not None :
+        with pdfplumber.open(stream) as pdf :
+            pages = [page.extract_text() for page in pdf.pages]
+            if first_page :
+                return "\n".join(pages),pages[0]
+            text = "\n".join(pages)
+    else :
+        with pdfplumber.open(file_path) as pdf :
+            pages = [page.extract_text() for page in pdf.pages]
+            if first_page :
+                return "\n".join(pages),pages[0]
+            text = "\n".join(pages)
     return text
 
 def split_text(text:str,delimiters:list,verbose=False):
@@ -558,11 +567,28 @@ def workflow_get_text():
         file_name = file.split('/')[-1]
         print(file_name)
         print(f"longeur : {len(get_text(file,client=client))}")
+
+def get_borrowers(text:str)->list[str]:
+    matches = re.findall(r"^(?:Madame|Monsieur).*",text,re.MULTILINE)
+    borrowers = [re.sub("Monsieur|Madame|DEMANDE DE FINANCEMENT|Projet|Associé|Caution|[()/]|Société","",match).strip() for match in matches]
+    return borrowers 
+
+def workflow_carcasse_2():
+    carcasse_dir = "/home/nathan/workspace/pdfWebhook/data/carcasse/"
+    file_list = list_files_walk(carcasse_dir)
+    for file in file_list:
+        # text ,first_page = extract_pdf(file_path=file,first_page=True)
+        # get_borrowers(first_page)
+        r =test_carcasse(online=False,file_path=file)
+        print(r.json()['borrowers'])
+
+    
+
 if __name__ == "__main__":
 
 
     
-    workflow_archive()
+    workflow_carcasse_2()
     # path_file = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_tXxugW9C8sTJvyJpE/3 derniers mois de relevé de compte bancaire (tous les comptes)/Relevé compte joint 251109.pdf"
 
     # print(mimetypes.guess_type(path_file))

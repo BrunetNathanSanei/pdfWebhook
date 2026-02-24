@@ -11,6 +11,8 @@ def preprocessing(text:str)->str:
                     "GALLEA Quentin\n","06-80-75-04-20\n",
                     "quentin@credit-avenue.fr\n",
                     "[0-9]{1,2}/[0-9]{1,2}\n",
+                    "ALLOUCHERY Romain\n",
+                    "07-87-43-44-92\n"
                     ]
     for pattern in pattern_list :
         text = re.sub(pattern,"",text)
@@ -60,15 +62,19 @@ def create_dir(dir):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-def extract_pdf(file_name : str,stream = None,pdf_dir = ZIP_DIR):
+def extract_pdf(file_name : str,stream = None,pdf_dir = ZIP_DIR,first_page=False):
     text = ""
     if stream is not None :
         with pdfplumber.open(stream) as pdf :
             pages = [page.extract_text() for page in pdf.pages]
+            if first_page :
+                return "\n".join(pages),pages[0]
             text = "\n".join(pages)
     else :
         with pdfplumber.open(("").join([pdf_dir,file_name])) as pdf :
             pages = [page.extract_text() for page in pdf.pages]
+            if first_page :
+                return "\n".join(pages),pages[0]
             text = "\n".join(pages)
     return text
 
@@ -188,13 +194,10 @@ def get_row(text:str,beginning:str,remove_beginning = True)->str:
     return result
 
 def get_borrowers(text:str)->list[str]:
-    # Garde la partie entre DEMANDE DE FINANCEMENT et Projet afin de savoir le nom et le nombre d'emprunteurs
-    borrowers = re.search(r"DEMANDE DE FINANCEMENT(.*?)Projet",text,re.DOTALL).group(1)
-    # Enlève tout ce qui n'est pas un nom d'emprunteurs
-    borrowers = re.sub("DEMANDE DE FINANCEMENT|Projet|Associé|Caution|[()/]|Société .*\n","",borrowers).strip()
-    # Split en fonction du saut de ligne pour spérarer les emprunteurs
-    borrowers = [x.strip() for x in  borrowers.split('\n')]
-    return borrowers   
+    matches = re.findall(r"^(?:Madame|Monsieur).*",text,re.MULTILINE)
+    borrowers = [re.sub("Monsieur|Madame|DEMANDE DE FINANCEMENT|Projet|Associé|Caution|[()/]|Société","",match).strip() for match in matches]
+    return borrowers 
+ 
 
 def get_loan(text_parts:dict)->tuple:
     loan = text_parts[" Détails des prêts"].lower() # Garde que ce qui est après Prêt principal amortissable de la section Détails des prêts

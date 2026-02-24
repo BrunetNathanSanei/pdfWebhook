@@ -48,24 +48,28 @@ def carcasse():
         file = requests.get(file_url)
         if not is_pdf(file):
             return {"error": "invalid_pdf"}, 400
-        text = extract_pdf(file_name=None, stream=BytesIO(file.content))
+        text,first_page = extract_pdf(file_name=None, stream=BytesIO(file.content),first_page=True)
     elif "file" in request.files :
         file = request.files["file"]
-        text = extract_pdf(file_name=None,stream=file.stream)
+        text,first_page = extract_pdf(file_name=None,stream=file.stream,first_page=True)
+        
     else :
         current_app.logger.info("Aucun fichier reçu")
         return "Aucun fichier reçu", 400   
     
-    text = preprocessing(text)
-    borrowers = get_borrowers(text)
-    delimiters = create_delimiters_list(borrowers)
-    
-    text_parts = split_text(text=text,delimiters=delimiters)
-    text = text_without_com(text_parts=text_parts)
-    informations = get_informations(borrowers,text_parts)
-    total,taux,duree,contexte = get_loan(text_parts)
-    data = {"text" : text,"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
-    # app.logger.info(data)
+    try :
+        text = preprocessing(text)
+        borrowers = get_borrowers(first_page)
+        delimiters = create_delimiters_list(borrowers)
+        
+        text_parts = split_text(text=text,delimiters=delimiters)
+        text = text_without_com(text_parts=text_parts)
+        informations = get_informations(borrowers,text_parts)
+        total,taux,duree,contexte = get_loan(text_parts)
+        data = {"text" : text,"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
+        # app.logger.info(data)
+    except :
+        data = {"text" : text }
     return data
 
 
