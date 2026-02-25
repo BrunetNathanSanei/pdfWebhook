@@ -9,15 +9,8 @@ from .config import ZIP_DIR,WEBHOOK_URL,MISTRAL_LLM_MODEL,MISTRAL_OCR_MODEL,SUPP
 from .utils import create_dir, list_files_walk,clean,extract_pdf,upload_pdf,post_processing_mistral,remove_dir,is_pdf
 
 def process(convId,userId,zip_url,client):
-    files = requests.get(zip_url)
-    print(BytesIO(files.content))
     zip_dir = ZIP_DIR+convId+'/'
     # Create the dir if does not exist
-    create_dir(zip_dir)
-    # Get the zip and extract it in the folder
-    zip = ZipFile(BytesIO(files.content))
-    zip.extractall(zip_dir)
-    # Check if the files are pdf, extract the image and save it, extract the text from all the pdf
     list_files = list_files_walk(zip_dir)
     text_list = []
     for file in list_files:
@@ -36,6 +29,20 @@ def process(convId,userId,zip_url,client):
     }
     requests.post(WEBHOOK_URL, data=json.dumps(data), headers=headers)
     logging.info("Webhook contacté")
+
+def extract_zip(convId,userId,zip_url):
+    try :
+        files = requests.get(zip_url)
+        print(BytesIO(files.content))
+        zip_dir = ZIP_DIR+convId+'/'
+        # Create the dir if does not exist
+        create_dir(zip_dir)
+        # Get the zip and extract it in the folder
+        zip = ZipFile(BytesIO(files.content))
+        zip.extractall(zip_dir)
+        return {"sucess" : True}
+    except Exception as e :
+        raise ValueError(e)
 
 def get_text(file_path,client):
     file_name = file_path.split('/')[-1]

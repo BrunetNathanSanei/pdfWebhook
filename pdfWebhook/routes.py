@@ -6,7 +6,7 @@ import threading
 from mistralai import Mistral
 from zipfile import ZipFile
 from .utils import split_text, clean,preprocessing,create_dir, extract_pdf,get_borrowers,create_delimiters_list,text_without_com,get_informations,get_loan, is_pdf
-from .core import process,get_text
+from .core import process,get_text,extract_zip
 from .config import ZIP_DIR,API_KEY
 
 courtia = Blueprint('courtia',__name__)
@@ -74,51 +74,23 @@ def carcasse():
         data = {"text" : text }
     return data
 
-
-
 @courtia.route("/archive", methods = ['POST'])
-def archive():
-    
+def archive(): 
     current_app.logger.info("Requête reçu sur /archive")
     file_url = request.form["file_url"]
     convId = request.form["convId"]
     userId = request.form["userId"]
+    try :
+        extract_zip(convId=convId,userId=userId,zip_url=file_url)
+    except ValueError as e :
+        response = jsonify({"status": e})
+        response.status_code = 400
+        return response
+    except Exception:
+        current_app.logger.info("Erreur inattendue")
+        return {"error": "Erreur interne"}, 500
     thread = threading.Thread(target = process, args=(convId,userId,file_url,client),daemon=True)
     thread.start()
     response = jsonify({"status": "accepted"})
     response.status_code = 200
     return response 
-
-@courtia.route("/send_archive", methods = ["POST"])
-def send_archive():
-    current_app.logger.info("Requête reçu sur /send_archive")
-    file_url = request.form["file_url"]
-    file = requests.get(file_url)
-    current_app.logger.info(BytesIO(file.content))
-    zip_dir = ZIP_DIR
-    # Create the dir if does not exist
-    create_dir(zip_dir)
-    # Get the zip and extract it in the folder
-    zip = ZipFile(BytesIO(file.content))
-    zip.extractall(zip_dir)
-    response = jsonify({"status": "accepted"})
-    response.status_code = 200
-    return response 
-
-@courtia.route("/analyse",methods = ["POST"])
-def analyse():
-    current_app.logger.info("Requête reçu sur /archive")
-    convId = request.form["convId"]
-    userId = request.form["userId"]
-    thread = threading.Thread(target = process, args=(convId,userId),daemon=True)
-    thread.start()
-    response = jsonify({"status": "accepted"})
-    response.status_code = 200
-    return response 
-
-@courtia.route("/remove_file",methods = ['GET'])
-def remove_file():
-    zip_dir = ZIP_DIR
-    clean(zip_dir)
-    current_app.logger.info("Nettoyage terminé")
-    return jsonify({"status" : "files removed"}),200
