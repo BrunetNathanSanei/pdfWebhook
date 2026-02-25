@@ -83,7 +83,7 @@ def archive():
     try :
         extract_zip(convId=convId,userId=userId,zip_url=file_url)
     except ValueError as e :
-        response = jsonify({"status": e})
+        response = jsonify({"status": "error with Zip"})
         response.status_code = 400
         return response
     except Exception:
