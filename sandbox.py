@@ -581,6 +581,11 @@ def workflow_carcasse_2():
         # get_borrowers(first_page)
         r =test_carcasse(online=False,file_path=file)
         print(r.json()['borrowers'])
+    
+def workflow_carcasse3():
+    url = "https://files.bpcontent.cloud/2026/02/25/09/20260225094506-L9J0PCE3.pdf"
+    r = test_carcasse(online=False,file_url=url)
+    print(r.json()['borrowers'])
 
     
 
@@ -588,7 +593,7 @@ if __name__ == "__main__":
 
 
     
-    workflow_carcasse_2()
+    workflow_carcasse3()
     # path_file = "/home/nathan/workspace/pdfWebhook/data/Actelo_GED_export_tXxugW9C8sTJvyJpE/3 derniers mois de relevé de compte bancaire (tous les comptes)/Relevé compte joint 251109.pdf"
 
     # print(mimetypes.guess_type(path_file))

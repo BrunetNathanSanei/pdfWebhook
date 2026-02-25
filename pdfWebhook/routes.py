@@ -56,7 +56,7 @@ def carcasse():
         
     else :
         current_app.logger.info("Aucun fichier reçu")
-        return "Aucun fichier reçu", 400   
+        return "Aucun fichier reçu", 400
     
     try :
         text = preprocessing(text)
@@ -70,6 +70,7 @@ def carcasse():
         data = {"text" : text,"borrowers" : informations , "loan" : {"total" : total,"taux" : taux, "duration" :duree, "contexte" : contexte} }
         # app.logger.info(data)
     except :
+        current_app.logger.info(text)
         data = {"text" : text }
     return data
 
